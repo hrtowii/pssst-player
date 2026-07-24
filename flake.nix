@@ -37,12 +37,19 @@
               pspdev.packages.${system}.psp-pkg-config
               pspdev.packages.${system}.ebootsigner
               pspdev.packages.${system}.psp-cmake
+	      
             ];
             shellHook = ''
-                            echo "PSP toolchain ready (${system})"
-              	       build() {
+                  echo "PSP toolchain ready (${system})"
+		    cat > .nvim.lua <<'EOF'
+vim.lsp.config("clangd", {
+  cmd = { "psp-clangd", "--background-index", "--clang-tidy" },
+})
+EOF
+              	  build() {
                     rm -rf build
-                    psp-cmake -B build -S . || return 1
+                    psp-cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON || return 1
+		    ln -sf build/compile_commands.json compile_commands.json
                     cmake --build build
                   }
 

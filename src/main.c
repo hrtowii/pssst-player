@@ -21,6 +21,7 @@ static int callback_thread(SceSize args, void *argp) {
     return 0;
 }
 
+// sceKernelCreateThread -> name, entry, initpriority, stack size, attr, option
 static void setup_callbacks(void) {
     int thid = sceKernelCreateThread("update_thread", callback_thread,
                                       0x11, 0xFA0, 0, NULL);
