@@ -6,6 +6,49 @@
 #include "util.h"
 
 #define TAG	"file_scanner"
+static uint32_t fnv1a32(const void *data, size_t length) {
+    uint32_t hash = 0x811c9dc5;
+    const uint8_t *p = (const uint8_t *)data;
+    const uint8_t *end = p + length;
+
+    while (p < end) {
+        uint8_t c = *p++;
+        // FILE.MP3 == file.mp3, dont rehash
+        if (c >= 'A' && c <= 'Z') {
+            c |= 0x20; 
+        }
+
+        hash ^= c;
+        hash *= 0x01000193;
+    }
+
+    return hash;
+}
+
+static int library_push(struct library* l, const char* rel)
+{
+	if (l->len == l->cap) {
+		size_t newcap = l->cap ? (l->cap * 2) : 64;
+		struct item* newitems = realloc(l->items, newcap * sizeof(*newitems));
+		if (!newitems) {
+			LOG_ERR(TAG, "realloc FAILED OOM");
+			return -1;
+		}
+		l->items = newitems;
+		l->cap = newcap;
+	}
+
+	char* p = strdup(rel);
+	if (!p)
+		return -1;
+
+	l->items[l->len].id = fnv1a32(rel, strlen(rel));
+	l->items[l->len].path = p;
+	l->len++;
+
+	return 0;
+}
+
 /**
  * @brief Recursively scan one directory subtree
  *
@@ -17,16 +60,19 @@
  */
 static int scan_dir(struct library* l, const char* root, const char* rel)
 {
-	char full[4096];
+	// char full[4096];
+	// 32 bit system lmeow
+	char* full = malloc(MAX_PATH);
+
 	DIR* d;
 	struct dirent* e;
 
 	if (rel[0] == '\0') {
-		if (snprintf(full, sizeof(full), "%s", root) >= (int)sizeof(full))
+		if (snprintf(full, MAX_PATH, "%s", root) >= (int)sizeof(full))
 			return -1;
 	}
 	else {
-		if (join_path(full, sizeof(full), root, rel) < 0)
+		if (join_path(full, MAX_PATH, root, rel) < 0)
 			return -1;
 	}
 
@@ -42,8 +88,8 @@ static int scan_dir(struct library* l, const char* root, const char* rel)
 		if (strcmp(e->d_name, "..") == 0)
 			continue;
 
-		char rel2[4096];
-		char full2[4096];
+		char rel2[MAX_PATH];
+		char full2[MAX_PATH];
 
 		if (rel[0] == '\0') {
 			if (snprintf(rel2, sizeof(rel2), "%s", e->d_name) >= (int)sizeof(rel2))
@@ -75,6 +121,7 @@ static int scan_dir(struct library* l, const char* root, const char* rel)
 	}
 
 	closedir(d);
+	free(full);
 	return 0;
 
 fail:

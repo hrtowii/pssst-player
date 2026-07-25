@@ -1,9 +1,12 @@
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspctrl.h>
-
 #include "audio.h"
-
+#include "file.h"
+#include "logging.h"
+#include "config.h"
+#include "util.h"
+#include "defer.h"
 PSP_MODULE_INFO("pssst_player", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
 
@@ -28,10 +31,19 @@ static void setup_callbacks(void) {
     if (thid >= 0) sceKernelStartThread(thid, 0, NULL);
 }
 
-int main(void) {
+int main(int argc, char * argv[] ){
     setup_callbacks();
     pspDebugScreenInit();
-
+    char app_dir[MAX_PATH];
+    get_app_dir(argc, argv, app_dir, sizeof(app_dir));
+    struct config config;
+    if (config_load(app_dir, &config) <= 0) 
+	    die("can't read config dir");
+    
+        struct library lib;
+	if (scan_library(&lib, config.media_dir) < 0)
+		die("scan_library");
+	LOG_DEBUG("SCAN", "Cached items       %zu", lib.len);
     // audio_init();
 
     SceCtrlData pad;

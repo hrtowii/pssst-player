@@ -3,7 +3,7 @@
 // copied from parados for recursive scanning
 // https://github.com/uint23/parados/blob/master/server/include/scan.h
 struct item {
-	uint64_t       id;
+	uint32_t       id;
 	char*          path;
 };
 

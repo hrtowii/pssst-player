@@ -41,15 +41,27 @@
             ];
             shellHook = ''
                   echo "PSP toolchain ready (${system})"
-		    cat > .nvim.lua <<'EOF'
-vim.lsp.config("clangd", {
-  cmd = { "psp-clangd", "--background-index", "--clang-tidy" },
-})
-EOF
+		  PSPGCC=${pspdev.packages.${system}.psp-gcc}/bin/psp-gcc
+  		  PSP_SYSROOT=${pspdev.packages.${system}.pspsdk}/psp/sdk
+  		  PSP_GCC_VERSION=$($PSPGCC -dumpversion)
+  		  PSP_GCC_LIBDIR=$($PSPGCC -print-file-name=include)
+
               	  build() {
                     rm -rf build
                     psp-cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON || return 1
 		    ln -sf build/compile_commands.json compile_commands.json
+		        cat > "$PWD/.clangd" <<EOF
+CompileFlags:
+  CompilationDatabase: build
+  Add:
+    - -isystem''${PSPGCC%/bin/psp-gcc}/psp/include
+    - -isystem''${PSP_GCC_LIBDIR}
+    - -isystem''${PSP_SYSROOT}/include
+    - --gcc-toolchain=''${PSPGCC%/bin/psp-gcc}
+    - --target=psp
+    - -fgnuc-version=''${PSP_GCC_VERSION}
+    - -std=gnu17
+EOF
                     cmake --build build
                   }
 
