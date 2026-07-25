@@ -7,7 +7,7 @@
 #define AUDIO_MAX_TRACKS   512
 #define AUDIO_SAMPLE_RATE  44100
 #define AUDIO_CHANNELS     2
-#define AUDIO_CHUNK_FRAMES 2048            // frames per sceAudio output call
+#define AUDIO_CHUNK_FRAMES 2048
 #define AUDIO_RINGBUF_FRAMES (AUDIO_SAMPLE_RATE / 2)
 
 typedef enum {

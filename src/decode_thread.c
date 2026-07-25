@@ -5,41 +5,89 @@
 #include "audio_internal.h"
 #include "ringbuf.h"
 #include "playlist.h"
+#include "logging.h"
+
+#define TAG "decode_thread"
 
 static struct mad_stream g_stream;
 static struct mad_frame  g_frame;
 static struct mad_synth  g_synth;
 static SceUID            g_fd = -1;
+static bool               g_decoder_open = false;
 
-bool decoder_open(const char *path) {
-    if (g_fd >= 0) { sceIoClose(g_fd); g_fd = -1; }
-    g_fd = sceIoOpen(path, PSP_O_RDONLY, 0777);
-    if (g_fd < 0) return false;
 
-    mad_stream_init(&g_stream);
-    mad_frame_init(&g_frame);
-    mad_synth_init(&g_synth);
-    return true;
-}
-
-void decoder_close(void) {
+static void decoder_close(void) {
+    if (!g_decoder_open) return;
     mad_synth_finish(&g_synth);
     mad_frame_finish(&g_frame);
     mad_stream_finish(&g_stream);
     if (g_fd >= 0) { sceIoClose(g_fd); g_fd = -1; }
+    g_decoder_open = false;
 }
 
-// fills MP3 read buffer + feeds mad_stream, returns false on real EOF
 static bool decoder_fill(void) {
     static unsigned char in_buf[8192 + MAD_BUFFER_GUARD];
     size_t remaining = g_stream.bufend - g_stream.next_frame;
     memmove(in_buf, g_stream.next_frame, remaining);
 
     int n = sceIoRead(g_fd, in_buf + remaining, sizeof(in_buf) - remaining);
-    if (n <= 0 && remaining == 0) return false; // EOF, nothing left to drain
+    if (n <= 0 && remaining == 0) return false; // real EOF
 
     mad_stream_buffer(&g_stream, in_buf, remaining + (n > 0 ? n : 0));
     return true;
+}
+
+
+static bool decoder_open(const char *path) {
+    LOG_DEBUG(TAG, "opening: %s", path);
+    g_fd = sceIoOpen(path, PSP_O_RDONLY, 0777);
+    if (g_fd < 0) {
+        LOG_ERR(TAG, "sceIoOpen failed: %d", g_fd);
+        return false;
+    }
+
+    mad_stream_init(&g_stream);
+    // ^ dis zeros the struct which the mad_stream_buffer needs so initial run kaboom
+    mad_frame_init(&g_frame);
+    mad_synth_init(&g_synth);
+    if (!decoder_fill()) {
+        LOG_ERR(TAG, "decoder_fill failed on open (empty file?)");
+        decoder_close();
+        return false;
+    }
+    g_decoder_open = true;
+    return true;
+}
+
+static void handle_pending_switch(void) {
+    switch_kind_t kind;
+    char path[MAX_PATH];
+
+    sceKernelWaitSema(g_switch_lock, 1, NULL);
+    kind = g_switch_kind;
+    if (kind == SWITCH_TO_PATH) {
+        strncpy(path, g_switch_path, sizeof(path) - 1);
+        path[sizeof(path) - 1] = '\0';
+    }
+    g_switch_kind = SWITCH_NONE;
+    sceKernelSignalSema(g_switch_lock, 1);
+
+    if (kind == SWITCH_NONE) return;
+    LOG_DEBUG(TAG, "handling switch, path len=%d", (int)strlen(path));
+
+    decoder_close();
+
+    if (kind == SWITCH_STOP) {
+        g_state = AUDIO_STATE_STOPPED;
+        return;
+    }
+
+    // kind == SWITCH_TO_PATH
+    if (!decoder_open(path)) {
+        g_state = AUDIO_STATE_STOPPED;
+    } else {
+        g_state = AUDIO_STATE_PLAYING;
+    }
 }
 
 int decode_thread(SceSize args, void *argp) {
@@ -47,7 +95,9 @@ int decode_thread(SceSize args, void *argp) {
     short pcm_chunk[AUDIO_CHUNK_FRAMES * AUDIO_CHANNELS];
 
     while (g_running) {
-        if (g_state != AUDIO_STATE_PLAYING) {
+        handle_pending_switch();
+
+        if (g_state != AUDIO_STATE_PLAYING || !g_decoder_open) {
             sceKernelDelayThread(10 * 1000);
             continue;
         }
@@ -60,7 +110,7 @@ int decode_thread(SceSize args, void *argp) {
         if (mad_frame_decode(&g_frame, &g_stream) == -1) {
             if (g_stream.error == MAD_ERROR_BUFLEN) {
                 if (!decoder_fill()) {
-                    // real EOF: ask playlist what's next
+                    // real EOF: ask playlist what's next, ourselves — no cross-thread call needed
                     const char *next = playlist_advance(&g_pl);
                     decoder_close();
                     if (!next || !decoder_open(next)) {
@@ -80,5 +130,7 @@ int decode_thread(SceSize args, void *argp) {
         }
         ring_push(&g_ring, pcm_chunk, nframes);
     }
+
+    decoder_close();
     return 0;
 }

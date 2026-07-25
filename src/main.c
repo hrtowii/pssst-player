@@ -9,6 +9,7 @@
 #include <pspkernel.h>
 #include "ui.h"
 #include "stdlib.h"
+#define TAG 	"main"
 
 PSP_MODULE_INFO("pssst_player", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
@@ -40,10 +41,10 @@ static void setup_callbacks(void) {
 int main(int argc, char *argv[]) {
   setup_callbacks();
   pspDebugScreenInit();
-
+  log_init("ms0:/PSP/SAVEDATA/pssst_player/debug.log");
+  defer { log_shutdown(); }
   char app_dir[MAX_PATH];
   get_app_dir(argc, argv, app_dir, sizeof(app_dir));
-
   char config_path[MAX_PATH];
   if (join_path(config_path, sizeof(config_path),
                 "ms0:/PSP/SAVEDATA/pssst_player/", "config.txt") < 0)
@@ -102,6 +103,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (pressed & PSP_CTRL_CROSS) {
+	    LOG_DEBUG(TAG, "playing song %d", selected);
       audio_play_index(selected);
     }
     if (pressed & PSP_CTRL_CIRCLE) {
@@ -121,7 +123,6 @@ int main(int argc, char *argv[]) {
     draw_list(&lib, &config, selected, scroll, audio_get_current_index());
     sceKernelDelayThread(16000);
   }
-
   sceKernelExitGame();
   return 0;
 }

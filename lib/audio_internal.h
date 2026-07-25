@@ -5,6 +5,7 @@
 #include <pspkernel.h>
 #include <stdbool.h>
 #include "audio.h"
+#include "util.h"
 
 typedef struct {
     char  *paths[AUDIO_MAX_TRACKS];
@@ -12,21 +13,33 @@ typedef struct {
     int    current;
     repeat_mode_t repeat;
     bool   shuffle;
-    SceUID lock;               // semaphore guarding this struct
+    SceUID lock;
 } playlist_t;
 
 typedef struct {
     short  data[AUDIO_RINGBUF_FRAMES * AUDIO_CHANNELS];
-    volatile int head;         // write pos, frames
-    volatile int tail;         // read pos, frames
+    volatile int head;
+    volatile int tail;
     SceUID lock;
 } ring_buffer_t;
 
-// shared global state — declared here, defined in audio.c
-extern playlist_t            g_pl;
-extern ring_buffer_t         g_ring;
+extern playlist_t             g_pl;
+extern ring_buffer_t          g_ring;
 extern volatile audio_state_t g_state;
 extern volatile bool          g_running;
 extern int                    g_audio_channel;
+
+// ---- track-switch mailbox ----
+// ONLY decode_thread ever calls decoder_open/decoder_close.
+// Every other thread posts a request here instead of touching the decoder directly.
+typedef enum {
+    SWITCH_NONE,
+    SWITCH_TO_PATH,   // load g_switch_path and play
+    SWITCH_STOP,      // close whatever's open, go idle
+} switch_kind_t;
+
+extern volatile switch_kind_t g_switch_kind;
+extern char                   g_switch_path[MAX_PATH];
+extern SceUID                 g_switch_lock;
 
 #endif

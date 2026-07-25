@@ -25,8 +25,11 @@ static uint32_t fnv1a32(const void *data, size_t length) {
     return hash;
 }
 
-static int library_push(struct library* l, const char* rel)
+static int library_push(struct library* l, const char* root, const char* rel)
 {
+	char full[MAX_PATH];
+	if (join_path(full, sizeof(full), root, rel) < 0)
+        	return -1;
 	if (l->len == l->cap) {
 		size_t newcap = l->cap ? (l->cap * 2) : 64;
 		struct item* newitems = realloc(l->items, newcap * sizeof(*newitems));
@@ -38,7 +41,7 @@ static int library_push(struct library* l, const char* rel)
 		l->cap = newcap;
 	}
 
-	char* p = strdup(rel);
+	char* p = strdup(full);
 	if (!p)
 		return -1;
 
@@ -113,7 +116,7 @@ static int scan_dir(struct library* l, const char* root, const char* rel)
 		}
 
 		if (S_ISREG(st.st_mode)) {
-			if (library_push(l, rel2) < 0)
+			if (library_push(l, root, rel2) < 0)
 				goto fail;
 			continue;
 		}
