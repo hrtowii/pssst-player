@@ -36,6 +36,22 @@
         "type": "github"
       }
     },
+    "libmad-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1716173806,
+        "narHash": "sha256-M47w7Lu5Xsp/CnN8NmdPI0b4WDojW4jL+3pel5j1tNo=",
+        "owner": "pspdev",
+        "repo": "libmad",
+        "rev": "b94393de1c7af46360b54a650d4a4855bdf79bbc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pspdev",
+        "repo": "libmad",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1784796856,
@@ -105,6 +121,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "libmad-src": "libmad-src",
         "nixpkgs": "nixpkgs",
         "pspdev": "pspdev"
       }

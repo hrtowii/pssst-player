@@ -4,6 +4,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     pspdev.url = "github:pspdev/pspdev-nix";
+    libmad-src = {
+      url = "github:pspdev/libmad";
+      flake = false;
+    };
   };
 
   outputs =
@@ -12,6 +16,7 @@
       nixpkgs,
       flake-utils,
       pspdev,
+      libmad-src,
     }:
     flake-utils.lib.eachSystem
       [
@@ -24,8 +29,46 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-        in
+	  libmad = pkgs.stdenv.mkDerivation {
+            pname = "psp-libmad";
+            version = "unstable";
+            src = libmad-src;
+
+            nativeBuildInputs = [
+              pkgs.gnumake
+              pspdev.packages.${system}.pspsdk
+              pspdev.packages.${system}.psp-gcc
+              pspdev.packages.${system}.psp-binutils
+              pspdev.packages.${system}.psp-pkg-config
+            ];
+
+  	    AR      = "${pspdev.packages.${system}.psp-binutils}/bin/psp-ar";
+            RANLIB  = "${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib";
+
+            configurePhase = ''
+	    	runHook preConfigure
+    	 	runHook postConfigure
+            '';
+
+            buildPhase = ''
+	    	runHook preBuild
+              	make -j$NIX_BUILD_CORES AR=$AR RANLIB=$RANLIB
+              	runHook postBuild
+            '';
+
+            installPhase = ''
+	    	runHook preInstall
+    	    	make install PSPDIR=$out AR=$AR RANLIB=$RANLIB
+		${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib $out/lib/libmad.a
+    		runHook postInstall
+            '';
+          };
+	  in
         {
+	packages = {
+            default = libmad;
+            libmad = libmad;
+          };
           devShells.default = pkgs.mkShell {
             name = "psp-dev";
             buildInputs = [
@@ -37,6 +80,7 @@
               pspdev.packages.${system}.psp-pkg-config
               pspdev.packages.${system}.ebootsigner
               pspdev.packages.${system}.psp-cmake
+	      libmad
 	      
             ];
             shellHook = ''
@@ -48,12 +92,14 @@
 
               	  build() {
                     rm -rf build
-                    psp-cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON || return 1
+                    psp-cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_LIBRARY_PATH="${libmad}/lib" -DCMAKE_INCLUDE_PATH="${libmad}/include" || return 1
 		    ln -sf build/compile_commands.json compile_commands.json
 		        cat > "$PWD/.clangd" <<EOF
 CompileFlags:
   CompilationDatabase: build
   Add:
+    - -isystem''${libmad}/include
+    - -isystem''${libmad}/psp/sdk/include
     - -isystem''${PSPGCC%/bin/psp-gcc}/psp/include
     - -isystem''${PSP_GCC_LIBDIR}
     - -isystem''${PSP_SYSROOT}/include
@@ -90,6 +136,8 @@ EOF
                   }
 
                   export -f build elf flash
+		  export LIBMAD_LIBDIR="${libmad}/lib"
+		  export LIBMAD_INCDIR="${libmad}/include"
               	      
             '';
           };
