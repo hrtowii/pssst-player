@@ -60,9 +60,8 @@ static int library_push(struct library* l, const char* rel)
  */
 static int scan_dir(struct library* l, const char* root, const char* rel)
 {
-	// char full[4096];
+	char full[MAX_PATH];
 	// 32 bit system lmeow
-	char* full = malloc(MAX_PATH);
 
 	DIR* d;
 	struct dirent* e;
@@ -121,7 +120,6 @@ static int scan_dir(struct library* l, const char* root, const char* rel)
 	}
 
 	closedir(d);
-	free(full);
 	return 0;
 
 fail:

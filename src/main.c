@@ -36,13 +36,17 @@ int main(int argc, char * argv[] ){
     pspDebugScreenInit();
     char app_dir[MAX_PATH];
     get_app_dir(argc, argv, app_dir, sizeof(app_dir));
+    char config_path[MAX_PATH];
+    if (join_path(config_path, sizeof(config_path), "ms0:/PSP/SAVEDATA/pssst_player/", "config.txt") < 0) die("failed to config join");
+
     struct config config;
-    if (config_load(app_dir, &config) <= 0) 
+    if (config_load(config_path, &config) < 0) 
 	    die("can't read config dir");
     
         struct library lib;
 	if (scan_library(&lib, config.media_dir) < 0)
-		die("scan_library");
+		die("scan library died");
+	defer {scan_library_free(&lib); }
 	LOG_DEBUG("SCAN", "Cached items       %zu", lib.len);
     // audio_init();
 
@@ -52,7 +56,7 @@ int main(int argc, char * argv[] ){
         if (pad.Buttons & PSP_CTRL_START) break;
 
         pspDebugScreenSetXY(0, 0);
-        pspDebugScreenPrintf("pssst_player running - press START to exit");
+        pspDebugScreenPrintf("%s %s %s", config_path, app_dir, config.media_dir);
 
         sceKernelDelayThread(16000);
     }

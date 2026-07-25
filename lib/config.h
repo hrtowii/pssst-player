@@ -13,4 +13,3 @@ struct config {
 // shuffle=0
 
 int config_load(const char *path, struct config *cfg);
-// config is a stack struct inited from main, no malloc or frees needed cus its small enough

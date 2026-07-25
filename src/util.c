@@ -1,10 +1,12 @@
 #include "util.h"
 #include <string.h>
 #include <stdio.h>
-#include "psploadexec.h"
+#include <psploadexec.h>
+#include <pspdebug.h>
 #include "util.h"
 #include <string.h>
-
+#include <errno.h>
+#include <sys/stat.h>
 int get_app_dir(int argc, char *argv[], char *out_dir, size_t out_size)
 {
     if (argc < 1 || argv == NULL || argv[0] == NULL) {
@@ -73,8 +75,29 @@ int join_path(char* out, size_t outsz, const char* a, const char* b)
 	return 0;
 }
 
+int mkdir_p(const char *path) 
+{
+    char tmp[MAX_PATH];
+    size_t len = strlen(path);
+    if (len == 0 || len >= sizeof(tmp)) return -1;
+
+    strcpy(tmp, path);
+    if (tmp[len - 1] == '/') tmp[len - 1] = '\0';
+
+    for (char *p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if (mkdir(tmp, 0777) < 0 && errno != EEXIST) return -1;
+            *p = '/';
+        }
+    }
+    if (mkdir(tmp, 0777) < 0 && errno != EEXIST) return -1;
+    return 0;
+}
+
 void die(const char *s)
 {
-	perror(s);
-	sceKernelExitGame();
+	pspDebugScreenSetXY(100, 20);
+        pspDebugScreenPrintf("%s", s);
+	// sceKernelExitGame();
 }

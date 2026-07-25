@@ -58,7 +58,6 @@ CompileFlags:
     - -isystem''${PSP_GCC_LIBDIR}
     - -isystem''${PSP_SYSROOT}/include
     - --gcc-toolchain=''${PSPGCC%/bin/psp-gcc}
-    - --target=psp
     - -fgnuc-version=''${PSP_GCC_VERSION}
     - -std=gnu17
 EOF
