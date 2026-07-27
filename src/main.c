@@ -145,7 +145,6 @@ clay_renderer_render(cmds);
 
     end_frame();
     // draw_list(&lib, &config, selected, scroll, audio_get_current_index());
-    sceKernelDelayThread(16000);
   }
   sceKernelExitGame();
   return 0;
