@@ -76,7 +76,7 @@ bool audio_init(void) {
     }
 
     g_output_thread_id = sceKernelCreateThread("output_thread", output_thread,
-                                                0x12, 0x10000, 0, NULL);
+                                                0x18, 0x10000, 0, NULL);
     if (g_output_thread_id < 0) {
         LOG_ERR(TAG, "create output_thread failed: %d", g_output_thread_id);
         return false;

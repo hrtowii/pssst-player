@@ -15,7 +15,7 @@ typedef struct {
     bool   shuffle;
     SceUID lock;
 } playlist_t;
-
+// why de fuck ru here ok ill move it later TODO
 typedef struct {
     short  data[AUDIO_RINGBUF_FRAMES * AUDIO_CHANNELS];
     volatile int head;

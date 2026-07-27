@@ -32,8 +32,13 @@ void terminate_graphics();
 void init_graphics();
 
 void draw_rect(int x, int y, int w, int h, RGBA8888 color);
+
+void set_scissor(int x, int y, int w, int h);
+void clear_scissor(void);
+
 void start_frame(void);
 void end_frame(void);
 
+void build_ui(struct library *lib, struct config *config, int selected, int scroll, int playing_index);
 
 #endif

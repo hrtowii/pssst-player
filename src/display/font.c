@@ -62,17 +62,38 @@ void draw_glyph(int x, int y, unsigned char c, RGBA8888 color)
                    2, 0, v);
 }
 
-void draw_text8x16(int x, int y, const char *str, int len, RGBA8888 color)
-{
+void draw_text8x16(int x, int y, const char *str, int len, RGBA8888 color) {
+    unsigned int gu_color = color_to_gu(color);
+    TexVertex* v = (TexVertex*)sceGuGetMemory(2 * len * sizeof(TexVertex));
+
     int cursor_x = x;
+    int vi = 0;
     for (int i = 0; i < len; i++) {
-        if (str[i] == '\n') {
-            cursor_x = x;
-            y += GLYPH_H;
-            continue;
-        }
-        draw_glyph(cursor_x, y, (unsigned char)str[i], color);
+        unsigned char c = (unsigned char)str[i];
+        if (c == '\n') { cursor_x = x; y += GLYPH_H; continue; }
+        if (c < 32 || c > 32 + 95) { cursor_x += GLYPH_W; continue; }
+
+        unsigned char index = c - 32;
+        int cell_x = (index % ATLAS_COLS) * GLYPH_W;
+        int cell_y = (index / ATLAS_COLS) * GLYPH_H;
+
+        v[vi].u = (float)cell_x;         v[vi].v = (float)cell_y;
+        v[vi].color = gu_color;
+        v[vi].x = cursor_x; v[vi].y = y; v[vi].z = 0;
+        vi++;
+
+        v[vi].u = (float)(cell_x + GLYPH_W); v[vi].v = (float)(cell_y + GLYPH_H);
+        v[vi].color = gu_color;
+        v[vi].x = cursor_x + GLYPH_W; v[vi].y = y + GLYPH_H; v[vi].z = 0;
+        vi++;
+
         cursor_x += GLYPH_W;
     }
-}
 
+    if (vi > 0) {
+        sceGuEnable(GU_TEXTURE_2D);
+        sceGuDrawArray(GU_SPRITES,
+                       GU_TEXTURE_32BITF | GU_COLOR_8888 | GU_VERTEX_16BIT | GU_TRANSFORM_2D,
+                       vi, 0, v);
+    }
+}

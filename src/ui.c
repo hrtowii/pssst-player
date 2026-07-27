@@ -3,7 +3,9 @@
 #include "audio.h"
 #include <pspgu.h>
 #include <pspdisplay.h>
+#include <string.h>
 #include "display/font.h"
+#include "display/clay_renderer_ui.h"
 unsigned int __attribute__((aligned(16))) display_list[16384];
 
 unsigned int color_to_gu(RGBA8888 c)
@@ -94,6 +96,66 @@ void end_frame(void)
     sceGuSwapBuffers();
 }
 
+// ha ha we are scissoring ha ha yuri
+void set_scissor(int x, int y, int w, int h) {
+    sceGuScissor(x, y, x + w, y + h);
+}
+
+void clear_scissor(void) {
+    sceGuScissor(0, 0, 480, 272);
+}
+
+#define ROW_H 16       // matches GLYPH_H, one line of text per row
+void list_row_component(struct library *lib, int index, bool is_selected, bool is_playing) {
+    static char row_text[VISIBLE_ROWS][80];
+    int slot = index % VISIBLE_ROWS;
+    snprintf(row_text[slot], sizeof(row_text[slot]), "%c%c%s",
+             is_selected ? '>' : ' ',
+             is_playing ? '*' : ' ',
+             lib->items[index].path);
+
+    Clay_String row_str = {
+        .chars = row_text[slot],
+        .length = (int32_t)strlen(row_text[slot])
+    };
+
+    Clay_Color bg = is_selected
+        ? (Clay_Color){ 60, 60, 90, 255 }
+        : (Clay_Color){ 0, 0, 0, 255 };
+
+    CLAY(CLAY_IDI("Row", index), (Clay_ElementDeclaration){
+        .layout = {
+            .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(ROW_H) }
+        },
+        .backgroundColor = bg
+    }) {
+        CLAY_TEXT(row_str, CLAY_TEXT_CONFIG({
+            .fontSize = GLYPH_H,
+            .textColor = (Clay_Color){ 255, 255, 255, 255 }
+        }));
+    }
+}
+
+void build_ui(struct library *lib, struct config *config, int selected, int scroll, int playing_index)
+{
+    CLAY(CLAY_ID("Root"), (Clay_ElementDeclaration){
+        .layout = {
+            .sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = (Clay_Color){ 0, 0, 0, 255 }
+    }) {
+        int start = scroll;
+        int end = scroll + VISIBLE_ROWS;
+        if (end > (int)lib->len) end = (int)lib->len;
+
+        for (int i = start; i < end; i++) {
+            list_row_component(lib, i, i == selected, i == playing_index);
+        }
+    }
+}
+
+// pspdebug printf ui
 void draw_list(struct library *lib, struct config *config,
                int selected, int scroll, int playing_index)
 {

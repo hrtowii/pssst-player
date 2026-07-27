@@ -30,13 +30,15 @@ static bool decoder_fill(void) {
     size_t remaining = g_stream.bufend - g_stream.next_frame;
     memmove(in_buf, g_stream.next_frame, remaining);
 
-    int n = sceIoRead(g_fd, in_buf + remaining, sizeof(in_buf) - remaining);
-    if (n <= 0 && remaining == 0) return false; // real EOF
+    int n = sceIoRead(g_fd, in_buf + remaining, 8192 - remaining); // note: cap to 8192, not sizeof(in_buf)
+    if (n <= 0 && remaining == 0) return false;
 
-    mad_stream_buffer(&g_stream, in_buf, remaining + (n > 0 ? n : 0));
+    size_t valid = remaining + (n > 0 ? n : 0);
+    memset(in_buf + valid, 0, MAD_BUFFER_GUARD); // guarantee guard bytes are zero, every call
+
+    mad_stream_buffer(&g_stream, in_buf, valid);
     return true;
 }
-
 
 static bool decoder_open(const char *path) {
     LOG_DEBUG(TAG, "opening: %s", path);

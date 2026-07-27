@@ -1,17 +1,19 @@
 #include "audio.h"
 #include "config.h"
 #include "defer.h"
+#include "display/font.h"
 #include "file.h"
 #include "logging.h"
+#include "stdlib.h"
+#include "ui.h"
 #include "util.h"
 #include <pspctrl.h>
 #include <pspdebug.h>
-#include <pspkernel.h>
-#include "ui.h"
 #include <pspgu.h>
-#include "display/font.h"
-#include "stdlib.h"
-#define TAG 	"main"
+#include <pspkernel.h>
+#include <psprtc.h>
+#include "display/clay_renderer_ui.h"
+#define TAG "main"
 
 PSP_MODULE_INFO("pssst_player", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
@@ -35,7 +37,7 @@ static int callback_thread(SceSize args, void *argp) {
 
 static void setup_callbacks(void) {
   int thid = sceKernelCreateThread("update_thread", callback_thread, 0x11,
-                                    0xFA0, 0, NULL);
+                                   0xFA0, 0, NULL);
   if (thid >= 0)
     sceKernelStartThread(thid, 0, NULL);
 }
@@ -43,7 +45,7 @@ static void setup_callbacks(void) {
 int main(int argc, char *argv[]) {
   setup_callbacks();
 
-  pspDebugScreenInit();
+  // pspDebugScreenInit();
   log_init("ms0:/PSP/SAVEDATA/pssst_player/debug.log");
   defer { log_shutdown(); }
   char app_dir[MAX_PATH];
@@ -70,7 +72,8 @@ int main(int argc, char *argv[]) {
 
   // build the path array audio_playlist_set expects
   const char **paths = malloc(sizeof(char *) * lib.len);
-  if (!paths) die("oom building playlist paths");
+  if (!paths)
+    die("oom building playlist paths");
   defer { free(paths); }
   for (size_t i = 0; i < lib.len; i++)
     paths[i] = lib.items[i].path;
@@ -78,12 +81,13 @@ int main(int argc, char *argv[]) {
   if (!audio_playlist_set(paths, (int)lib.len))
     LOG_DEBUG("AUDIO", "playlist too large, truncated to %d", AUDIO_MAX_TRACKS);
 
-    init_graphics();
-    defer { terminate_graphics(); }
-    init_font_texture();
+  init_graphics();
+  defer { terminate_graphics(); }
+  init_font_texture();
+  init_clay();
 
   int selected = 0;
-  int scroll   = 0;
+  int scroll = 0;
 
   SceCtrlData pad, old = {0};
 
@@ -111,12 +115,14 @@ int main(int argc, char *argv[]) {
     }
 
     if (pressed & PSP_CTRL_CROSS) {
-	    LOG_DEBUG(TAG, "playing song %d", selected);
+      LOG_DEBUG(TAG, "playing song %d", selected);
       audio_play_index(selected);
     }
     if (pressed & PSP_CTRL_CIRCLE) {
-      if (audio_get_state() == AUDIO_STATE_PLAYING) audio_pause();
-      else audio_play();
+      if (audio_get_state() == AUDIO_STATE_PLAYING)
+        audio_pause();
+      else
+        audio_play();
     }
     if (pressed & PSP_CTRL_SQUARE) {
       audio_stop();
@@ -127,14 +133,17 @@ int main(int argc, char *argv[]) {
     if (pressed & PSP_CTRL_LTRIGGER) {
       audio_prev();
     }
-	    start_frame();
+    start_frame();
 
-// sceGuClearColor(0xffff0000);
-// sceGuClear(GU_COLOR_BUFFER_BIT);
+    // draw_rect(0, 0, 480, 272, (RGBA8888){.a = 255, .b = 0, .g = 0, .r = 255});
+    // draw_text8x16(100, 200, "hello world", 11,
+                  // (RGBA8888){.a = 255, .b = 0, .g = 255, .r = 125});
+	Clay_BeginLayout();
+build_ui(&lib, &config, selected, scroll, audio_get_current_index());
+Clay_RenderCommandArray cmds = Clay_EndLayout(0);
+clay_renderer_render(cmds);
 
-    draw_rect(0, 0, 480, 272, (RGBA8888){.a = 255, .b = 0, .g = 0, .r = 255}); 
-    draw_text8x16(100, 200, "hello world", 11, (RGBA8888){.a = 255, .b = 0, .g = 255, .r = 125});
-end_frame();
+    end_frame();
     // draw_list(&lib, &config, selected, scroll, audio_get_current_index());
     sceKernelDelayThread(16000);
   }
