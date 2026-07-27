@@ -8,6 +8,8 @@
 #include <pspdebug.h>
 #include <pspkernel.h>
 #include "ui.h"
+#include <pspgu.h>
+#include "display/font.h"
 #include "stdlib.h"
 #define TAG 	"main"
 
@@ -40,6 +42,7 @@ static void setup_callbacks(void) {
 
 int main(int argc, char *argv[]) {
   setup_callbacks();
+
   pspDebugScreenInit();
   log_init("ms0:/PSP/SAVEDATA/pssst_player/debug.log");
   defer { log_shutdown(); }
@@ -75,10 +78,15 @@ int main(int argc, char *argv[]) {
   if (!audio_playlist_set(paths, (int)lib.len))
     LOG_DEBUG("AUDIO", "playlist too large, truncated to %d", AUDIO_MAX_TRACKS);
 
+    init_graphics();
+    defer { terminate_graphics(); }
+    init_font_texture();
+
   int selected = 0;
   int scroll   = 0;
 
   SceCtrlData pad, old = {0};
+
   while (1) {
     sceCtrlReadBufferPositive(&pad, 1);
     int pressed = pad.Buttons & ~old.Buttons;
@@ -119,8 +127,15 @@ int main(int argc, char *argv[]) {
     if (pressed & PSP_CTRL_LTRIGGER) {
       audio_prev();
     }
+	    start_frame();
 
-    draw_list(&lib, &config, selected, scroll, audio_get_current_index());
+// sceGuClearColor(0xffff0000);
+// sceGuClear(GU_COLOR_BUFFER_BIT);
+
+    draw_rect(0, 0, 480, 272, (RGBA8888){.a = 255, .b = 0, .g = 0, .r = 255}); 
+    draw_text8x16(100, 200, "hello world", 11, (RGBA8888){.a = 255, .b = 0, .g = 255, .r = 125});
+end_frame();
+    // draw_list(&lib, &config, selected, scroll, audio_get_current_index());
     sceKernelDelayThread(16000);
   }
   sceKernelExitGame();

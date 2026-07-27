@@ -92,7 +92,8 @@ bool audio_init(void) {
 void audio_shutdown(void) {
     request_stop();
     g_running = false;           // decode_thread + output_thread both check this and exit
-    sceKernelDelayThread(50 * 1000); // give threads a moment to observe g_running and exit their loops
+    sceKernelWaitThreadEnd(g_decode_thread_id, NULL);
+    sceKernelWaitThreadEnd(g_output_thread_id, NULL);
     sceAudioChRelease(g_audio_channel);
 }
 

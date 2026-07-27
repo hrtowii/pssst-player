@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(pssst-player C CXX ASM)
 
-file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.c")
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.c")
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
@@ -21,11 +21,28 @@ find_path(MAD_INCLUDE_DIR mad.h
     NO_CMAKE_FIND_ROOT_PATH
     REQUIRED
 )
+#
+# find_library(OSL_LIBRARY osl
+#     HINTS
+#         $ENV{OSLIB_LIBDIR}
+#         ${CMAKE_SOURCE_DIR}/lib
+#     NO_CMAKE_FIND_ROOT_PATH
+#     REQUIRED
+# )
+# find_path(OSL_INCLUDE_DIR oslib/oslib.h
+#     HINTS
+#         $ENV{OSLIB_INCDIR}
+#         ${CMAKE_SOURCE_DIR}/lib
+#     NO_CMAKE_FIND_ROOT_PATH
+#     REQUIRED
+# )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/lib
     ${MAD_INCLUDE_DIR}
+    # ${OSL_INCLUDE_DIR}
 )
+
 target_link_libraries(${PROJECT_NAME}
     pspgu
     pspgum
@@ -36,6 +53,7 @@ target_link_libraries(${PROJECT_NAME}
     pspdebug
     m
     ${MAD_LIBRARY}
+    # ${OSL_LIBRARY}
     # me-core
 )
 

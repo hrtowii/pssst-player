@@ -8,6 +8,12 @@
       url = "github:pspdev/libmad";
       flake = false;
     };
+    oslib-src = {
+      type = "git";
+      url = "https://github.com/dogo/oslib";
+      submodules = true;
+      flake = false;
+    };
   };
 
   outputs =
@@ -17,6 +23,7 @@
       flake-utils,
       pspdev,
       libmad-src,
+      oslib-src,
     }:
     flake-utils.lib.eachSystem
       [
@@ -63,11 +70,66 @@
     		runHook postInstall
             '';
           };
+          oslib = pkgs.stdenv.mkDerivation {
+            pname = "psp-oslib";
+            version = "unstable";
+            src = oslib-src;
+
+            nativeBuildInputs = [
+              pspdev.packages.${system}.pspsdk
+              pspdev.packages.${system}.psp-gcc
+              pspdev.packages.${system}.psp-binutils
+              pspdev.packages.${system}.psp-cmake
+              pspdev.packages.${system}.psp-libpng
+              pspdev.packages.${system}.psp-zlib
+            ];
+
+            patchPhase = ''
+              substituteInPlace cmake/PSP.cmake \
+                --replace-fail 'COMMAND psp-config --psp-prefix' \
+                'COMMAND echo ${pspdev.packages.${system}.psp-sysroot}/psp'
+              substituteInPlace cmake/PSP.cmake \
+                --replace-fail 'include_directories(' \
+                'include_directories(${pspdev.packages.${system}.psp-libpng}/psp/include ${pspdev.packages.${system}.psp-zlib}/psp/include '
+              grep -v 'audio/mod.c' CMakeLists.txt > CMakeLists.txt.tmp && mv CMakeLists.txt.tmp CMakeLists.txt
+            '';
+	    # ^^ mikmod ok look i just wanna build this PLS 
+            configurePhase = ''
+              runHook preConfigure
+              psp-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+              runHook postConfigure
+            '';
+
+            buildPhase = ''
+              runHook preBuild
+              psp-cmake --build build -j$NIX_BUILD_CORES
+              runHook postBuild
+            '';
+	    # hell isn't other people its fucking cmake and nix packaging holy shit
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib $out/include/oslib/adhoc
+              cp build/libosl.a $out/lib/
+              ${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib $out/lib/libosl.a
+              cp build/osl_config.h $out/include/oslib/
+              cp lib/libintraFont/include/intraFont.h lib/libintraFont/include/libccc.h $out/include/oslib/
+              cp lib/libpspmath/include/pspmath.h $out/include/oslib/
+              cp src/adhoc/pspadhoc.h $out/include/oslib/adhoc/
+              for h in src/oslmath.h src/net.h src/browser.h src/audio.h src/bgm.h \
+                       src/dialog.h src/drawing.h src/keys.h src/map.h src/messagebox.h \
+                       src/osk.h src/saveload.h src/oslib.h src/text.h src/usb.h \
+                       src/vfpu_ops.h src/VirtualFile.h src/vram_mgr.h src/ccc.h src/sfont.h; do
+                cp "$h" $out/include/oslib/
+              done
+              runHook postInstall
+            '';
+          };
 	  in
         {
-	packages = {
-            default = libmad;
+          packages = {
+            default = oslib;
             libmad = libmad;
+            oslib = oslib;
           };
           devShells.default = pkgs.mkShell {
             name = "psp-dev";
@@ -81,7 +143,7 @@
               pspdev.packages.${system}.ebootsigner
               pspdev.packages.${system}.psp-cmake
 	      libmad
-	      
+	      oslib
             ];
             shellHook = ''
                   echo "PSP toolchain ready (${system})"
@@ -92,13 +154,14 @@
 
               	  build() {
                     rm -rf build
-                    psp-cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_LIBRARY_PATH="${libmad}/lib" -DCMAKE_INCLUDE_PATH="${libmad}/include" || return 1
+                    psp-cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_LIBRARY_PATH="${libmad}/lib;${oslib}/lib" -DCMAKE_INCLUDE_PATH="${libmad}/include;${oslib}/include" || return 1
 		    ln -sf build/compile_commands.json compile_commands.json
 		        cat > "$PWD/.clangd" <<EOF
 CompileFlags:
   CompilationDatabase: build
   Add:
     - -isystem''${libmad}/include
+    - -isystem''${oslib}/include
     - -isystem''${libmad}/psp/sdk/include
     - -isystem''${PSPGCC%/bin/psp-gcc}/psp/include
     - -isystem''${PSP_GCC_LIBDIR}
@@ -138,6 +201,8 @@ EOF
                   export -f build elf flash
 		  export LIBMAD_LIBDIR="${libmad}/lib"
 		  export LIBMAD_INCDIR="${libmad}/include"
+		  export OSLIB_LIBDIR="${oslib}/lib"
+		  export OSLIB_INCDIR="${oslib}/include"
               	      
             '';
           };

@@ -99,6 +99,24 @@
         "type": "github"
       }
     },
+    "oslib-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778404020,
+        "narHash": "sha256-rP8Iq685Ftnneo3yg+h+SYwyAkVLQyURfh3iRGJyI9k=",
+        "ref": "refs/heads/master",
+        "rev": "3030df2ab783614946b45e84892db4aa5fe0ebee",
+        "revCount": 334,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/dogo/oslib"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/dogo/oslib"
+      }
+    },
     "pspdev": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -123,6 +141,7 @@
         "flake-utils": "flake-utils",
         "libmad-src": "libmad-src",
         "nixpkgs": "nixpkgs",
+        "oslib-src": "oslib-src",
         "pspdev": "pspdev"
       }
     },

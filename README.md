@@ -8,5 +8,5 @@
 
 * todo:
 1. GUI
-2. actual playing backend
+2. actual playing backend is done, todo 2: FLAC, wav, pcm, means abstracting it to its own struct and adding fptrs
 3. file scanning and config is done
