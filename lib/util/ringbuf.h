@@ -1,7 +1,15 @@
 #ifndef RING_BUFFER_H
 #define RING_BUFFER_H
 
-#include "audio/audio_internal.h"
+#include <pspkernel.h>
+#include "audio/audio.h"
+
+typedef struct {
+    short  data[AUDIO_RINGBUF_FRAMES * AUDIO_CHANNELS];
+    volatile int head;
+    volatile int tail;
+    SceUID lock;
+} ring_buffer_t;
 
 int ring_frames_free(ring_buffer_t *rb);
 int ring_frames_available(ring_buffer_t *rb);

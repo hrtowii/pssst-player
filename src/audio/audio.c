@@ -24,7 +24,6 @@ volatile switch_kind_t g_switch_kind = SWITCH_NONE;
 char                   g_switch_path[MAX_PATH];
 SceUID                 g_switch_lock;
 
-volatile int g_total_seconds = 0;
 volatile int g_output_frames = 0;
 
 static SceUID g_decode_thread_id = -1;
@@ -175,5 +174,4 @@ int audio_get_current_index(void)   { return g_pl.current; }
 const char *audio_get_current_path(void) {
     return (g_pl.current >= 0 && g_pl.current < g_pl.count) ? g_pl.paths[g_pl.current] : NULL;
 }
-int audio_get_total_seconds(void)   { return g_total_seconds; }
 int audio_get_current_second(void)  { return g_output_frames / AUDIO_SAMPLE_RATE; }

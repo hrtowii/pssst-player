@@ -1,6 +1,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "display/stb_image.h"
+#define STB_IMAGE_RESIZE2_IMPLEMENTATION
+#include "display/stb_image_resize2.h"
 
+#include "display/image.h"
 #include "display/ui.h"
 #include "util/util.h"
 #include <malloc.h>
@@ -54,4 +57,30 @@ PSPTexture load_texture(const char *path)
 PSPTexture create_texture_from_rgba(const unsigned char *rgba, int w, int h)
 {
     return upload_rgba(rgba, w, h);
+}
+
+PSPTexture album_art_from_metadata(metadata_t *meta)
+{
+    if (!meta->art_data || meta->art_len == 0)
+        return (PSPTexture){0};
+
+    int w, h, ch;
+    unsigned char *decoded = stbi_load_from_memory(
+        meta->art_data, (int)meta->art_len, &w, &h, &ch, 4);
+    if (!decoded)
+        return (PSPTexture){0};
+
+    int mw = w > 100 ? 100 : w;
+    int mh = h > 100 ? 100 : h;
+    PSPTexture tex = {0};
+    if (mw > 0 && mh > 0) {
+        unsigned char *resized = malloc(mw * mh * 4);
+        if (resized) {
+            stbir_resize_uint8_linear(decoded, w, h, 0, resized, mw, mh, 0, STBIR_RGBA);
+            tex = create_texture_from_rgba(resized, mw, mh);
+            free(resized);
+        }
+    }
+    stbi_image_free(decoded);
+    return tex;
 }

@@ -5,7 +5,7 @@
 #include "core/config.h"
 #include <psptypes.h>
 #include "display/clay.h"
-#include "player/id3.h"
+#include "player/metadata.h"
 
 #define VISIBLE_ROWS 20
 #define PSP_BUF_WIDTH	512
@@ -65,7 +65,7 @@ typedef struct {
     int             scroll;
     int             playing_index;
 
-    struct ID3Tag   id3;
+    metadata_t      meta;
     PSPTexture      album_art;
 
     int             current_sec;

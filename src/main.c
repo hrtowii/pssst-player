@@ -4,15 +4,12 @@
 #include "display/clay_renderer_ui.h"
 #include "display/font.h"
 #include "display/image.h"
-#include "display/stb_image.h"
 #include "display/ui.h"
-#include "player/id3.h"
+#include "player/metadata.h"
 #include "stdlib.h"
 #include "util/defer.h"
 #include "util/logging.h"
 #include "util/util.h"
-#define STB_IMAGE_RESIZE2_IMPLEMENTATION
-#include "display/stb_image_resize2.h"
 #include <pspctrl.h>
 #include <pspdebug.h>
 #include <pspgu.h>
@@ -154,38 +151,17 @@ int main(int argc, char *argv[]) {
         free(app.album_art.pixels);
         app.album_art = (PSPTexture){0};
       }
-// TODO move to its own thread with the ringbuf shit again
       if (idx >= 0) {
-        ParseID3((char *)audio_get_current_path(), &app.id3);
+        metadata_free(&app.meta);
+        metadata_loader_t *loader = metadata_loader_for(audio_get_current_path());
+        if (loader) loader->load(loader, audio_get_current_path(), &app.meta);
+        app.total_sec = app.meta.total_seconds;
 
-        size_t raw_len;
-        unsigned char *raw =
-            extract_album_art(audio_get_current_path(), &app.id3, &raw_len);
-        if (raw) {
-          int w, h, ch;
-          unsigned char *decoded =
-              stbi_load_from_memory(raw, (int)raw_len, &w, &h, &ch, 4);
-          if (decoded) {
-            int mw = w > 100 ? 100 : w;
-            int mh = h > 100 ? 100 : h;
-            if (mw > 0 && mh > 0) {
-              unsigned char *resized = malloc(mw * mh * 4);
-              if (resized) {
-                stbir_resize_uint8_linear(decoded, w, h, 0, resized, mw, mh, 0,
-                                          STBIR_RGBA);
-                app.album_art = create_texture_from_rgba(resized, mw, mh);
-                free(resized);
-              }
-            }
-            stbi_image_free(decoded);
-          }
-          free(raw);
-        }
+        app.album_art = album_art_from_metadata(&app.meta);
       }
     }
 
     app.current_sec = audio_get_current_second();
-    app.total_sec = audio_get_total_seconds();
     start_frame();
     Clay_BeginLayout();
     build_ui(&app);

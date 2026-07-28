@@ -15,7 +15,8 @@ int output_thread(SceSize args, void *argp) {
                    (AUDIO_CHUNK_FRAMES - n) * AUDIO_CHANNELS * sizeof(short));
         }
         sceAudioOutputBlocking(g_audio_channel, PSP_AUDIO_VOLUME_MAX, out_chunk);
-        g_output_frames += AUDIO_CHUNK_FRAMES;
+        if (g_state == AUDIO_STATE_PLAYING)
+            g_output_frames += AUDIO_CHUNK_FRAMES;
     }
     return 0;
 }

@@ -270,23 +270,23 @@ void build_ui(AppState *app) {
                                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
                                 .padding = {.left = 4}}}) {
 
-              Clay_String title_str = {.chars = app->id3.ID3Title,
+              Clay_String title_str = {.chars = app->meta.title,
                                        .length =
-                                           (int32_t)strlen(app->id3.ID3Title)};
+                                           (int32_t)strlen(app->meta.title)};
               CLAY_TEXT(title_str,
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = {255, 255, 255, 255}}));
 
               Clay_String artist_str = {
-                  .chars = app->id3.ID3Artist,
-                  .length = (int32_t)strlen(app->id3.ID3Artist)};
+                  .chars = app->meta.artist,
+                  .length = (int32_t)strlen(app->meta.artist)};
               CLAY_TEXT(artist_str,
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = {200, 200, 200, 255}}));
 
               Clay_String genre_str = {
-                  .chars = app->id3.ID3GenreText,
-                  .length = (int32_t)strlen(app->id3.ID3GenreText)};
+                  .chars = app->meta.genre,
+                  .length = (int32_t)strlen(app->meta.genre)};
               CLAY_TEXT(genre_str,
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = {150, 150, 150, 255}}));
