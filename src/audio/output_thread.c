@@ -1,8 +1,8 @@
 #include <string.h>
 #include <pspaudio.h>
-#include "output_thread.h"
-#include "audio_internal.h"
-#include "ringbuf.h"
+#include "audio/output_thread.h"
+#include "audio/audio_internal.h"
+#include "util/ringbuf.h"
 
 int output_thread(SceSize args, void *argp) {
     (void)args; (void)argp;

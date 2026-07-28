@@ -1,4 +1,4 @@
-#include "ringbuf.h"
+#include "util/ringbuf.h"
 
 int ring_frames_free(ring_buffer_t *rb) {
     int used = (rb->head - rb->tail + AUDIO_RINGBUF_FRAMES) % AUDIO_RINGBUF_FRAMES;

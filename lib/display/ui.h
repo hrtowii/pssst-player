@@ -1,8 +1,8 @@
 #ifndef UI_H
 #define UI_H
 
-#include "file.h"
-#include "config.h"
+#include "core/file.h"
+#include "core/config.h"
 #include <psptypes.h>
 #include "display/clay.h"
 

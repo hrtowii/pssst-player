@@ -1,11 +1,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "display/stb_image.h"
 
-#include "ui.h"
-#include "util.h"
+#include "display/ui.h"
+#include "util/util.h"
 #include <malloc.h>
 #include <pspkernel.h>
-#include "logging.h"
+#include "util/logging.h"
 #define TAG	"img_loader"
 
 PSPTexture load_texture(const char *path)

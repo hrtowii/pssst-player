@@ -1,6 +1,6 @@
-#include "config.h"
-#include "logging.h"
-#include "util.h"
+#include "core/config.h"
+#include "util/logging.h"
+#include "util/util.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

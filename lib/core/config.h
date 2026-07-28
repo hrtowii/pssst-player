@@ -1,4 +1,4 @@
-#include "util.h"
+#include "util/util.h"
 #include <stdbool.h>
 struct config {
 	char wallpaper[MAX_PATH];

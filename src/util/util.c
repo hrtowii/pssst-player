@@ -1,9 +1,9 @@
-#include "util.h"
+#include "util/util.h"
 #include <string.h>
 #include <stdio.h>
 #include <psploadexec.h>
 #include <pspdebug.h>
-#include "util.h"
+#include "util/util.h"
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>

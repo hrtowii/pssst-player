@@ -1,5 +1,5 @@
-#include "playlist.h"
-#include "mt19937.h"
+#include "core/playlist.h"
+#include "util/mt19937.h"
 #include <psprtc.h>
 
 const char *playlist_advance(playlist_t *pl) {

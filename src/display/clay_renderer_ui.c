@@ -2,7 +2,7 @@
 #include "display/clay_renderer_ui.h"
 #include "display/clay.h"
 #include "display/font.h"
-#include "ui.h"
+#include "display/ui.h"
 #include <stdint.h>
 #include <stdlib.h>
 static struct {

@@ -1,5 +1,5 @@
-#include "ui.h"
-#include "audio.h"
+#include "display/ui.h"
+#include "audio/audio.h"
 #include "display/clay_renderer_ui.h"
 #include "display/font.h"
 #include "display/image.h"

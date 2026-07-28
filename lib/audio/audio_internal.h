@@ -4,8 +4,8 @@
 #include <mad.h>
 #include <pspkernel.h>
 #include <stdbool.h>
-#include "audio.h"
-#include "util.h"
+#include "audio/audio.h"
+#include "util/util.h"
 
 typedef struct {
     char  *paths[AUDIO_MAX_TRACKS];

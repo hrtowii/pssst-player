@@ -1,9 +1,9 @@
-#include "file.h"
+#include "core/file.h"
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "logging.h"
-#include "util.h"
+#include "util/logging.h"
+#include "util/util.h"
 
 #define TAG	"file_scanner"
 static uint32_t fnv1a32(const void *data, size_t length) {

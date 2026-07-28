@@ -1,7 +1,7 @@
 #ifndef RING_BUFFER_H
 #define RING_BUFFER_H
 
-#include "audio_internal.h"
+#include "audio/audio_internal.h"
 
 int ring_frames_free(ring_buffer_t *rb);
 int ring_frames_available(ring_buffer_t *rb);

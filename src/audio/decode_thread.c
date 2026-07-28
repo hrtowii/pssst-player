@@ -1,11 +1,11 @@
 #include <string.h>
 #include <pspiofilemgr.h>
 #include <mad.h>
-#include "decode_thread.h"
-#include "audio_internal.h"
-#include "ringbuf.h"
-#include "playlist.h"
-#include "logging.h"
+#include "audio/decode_thread.h"
+#include "audio/audio_internal.h"
+#include "util/ringbuf.h"
+#include "core/playlist.h"
+#include "util/logging.h"
 
 #define TAG "decode_thread"
 

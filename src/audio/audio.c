@@ -2,15 +2,15 @@
 #include <pspkernel.h>
 #include <pspaudio.h>
 #include <psprtc.h>
-#include "audio.h"
-#include "audio_internal.h"
+#include "audio/audio.h"
+#include "audio/audio_internal.h"
 #include <stdlib.h>
-#include "ringbuf.h"
-#include "playlist.h"
-#include "decode_thread.h"
-#include "output_thread.h"
-#include "mt19937.h"
-#include "logging.h"
+#include "util/ringbuf.h"
+#include "core/playlist.h"
+#include "audio/decode_thread.h"
+#include "audio/output_thread.h"
+#include "util/mt19937.h"
+#include "util/logging.h"
 
 #define TAG "audio"
 
