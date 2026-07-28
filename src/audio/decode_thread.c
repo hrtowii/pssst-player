@@ -69,6 +69,7 @@ int decode_thread(SceSize args, void *argp) {
     short pcm_chunk[AUDIO_CHUNK_FRAMES * AUDIO_CHANNELS];
 
     while (g_running) {
+
         handle_pending_switch();
 
         if (g_state != AUDIO_STATE_PLAYING || !g_decoder_open) {
@@ -76,14 +77,16 @@ int decode_thread(SceSize args, void *argp) {
             continue;
         }
 
-        if (ring_frames_free(&g_ring) < AUDIO_CHUNK_FRAMES) {
-            sceKernelDelayThread(5 * 100);
-            continue;
-        }
+            int free = ring_frames_free(&g_ring);
+
+    if (free < AUDIO_CHUNK_FRAMES) {
+        sceKernelDelayThread(500);
+        continue;
+    }
 
         int n = g_decoder.read_pcm(&g_decoder, pcm_chunk, AUDIO_CHUNK_FRAMES);
+
         if (n <= 0) {
-            // EOF — advance to next track
             const char *next = playlist_advance(&g_pl);
             decoder_close();
             if (!next || !decoder_open(next)) {

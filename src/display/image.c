@@ -38,7 +38,7 @@ PSPTexture load_texture(const char *path)
     int w, h, channels;
     unsigned char *image = stbi_load(path, &w, &h, &channels, 4);
     if (image == NULL) {
-        LOG_DEBUG(TAG, "stbi failed loading %s: %s\n", path, stbi_failure_reason());
+        LOG_ERR(TAG, "stbi failed loading %s: %s\n", path, stbi_failure_reason());
         return (PSPTexture){0};
     }
 
@@ -46,7 +46,7 @@ PSPTexture load_texture(const char *path)
     stbi_image_free(image);
 
     if (texture.pixels == NULL)
-        LOG_DEBUG(TAG, "upload failed for %s (%dx%d)\n", path, w, h);
+        LOG_ERR(TAG, "upload failed for %s (%dx%d)\n", path, w, h);
     else
         LOG_DEBUG(TAG, "loaded %s: %dx%d, GE dims %dx%d\n", path, w, h,
                   texture.textureWidth, texture.textureHeight);

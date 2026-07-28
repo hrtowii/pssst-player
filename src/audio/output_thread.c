@@ -1,4 +1,5 @@
 #include <string.h>
+#include "util/logging.h"
 #include <pspaudio.h>
 #include "audio/output_thread.h"
 #include "audio/audio_internal.h"
@@ -17,6 +18,7 @@ int output_thread(SceSize args, void *argp) {
         sceAudioOutputBlocking(g_audio_channel, PSP_AUDIO_VOLUME_MAX, out_chunk);
         if (g_state == AUDIO_STATE_PLAYING)
             g_output_frames += AUDIO_CHUNK_FRAMES;
+
     }
     return 0;
 }
