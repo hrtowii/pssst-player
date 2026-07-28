@@ -1,7 +1,9 @@
 #include "audio.h"
 #include "config.h"
 #include "defer.h"
+#include "display/clay_renderer_ui.h"
 #include "display/font.h"
+#include "display/image.h"
 #include "file.h"
 #include "logging.h"
 #include "stdlib.h"
@@ -12,9 +14,7 @@
 #include <pspgu.h>
 #include <pspkernel.h>
 #include <psprtc.h>
-#include "display/clay_renderer_ui.h"
 #define TAG "main"
-
 PSP_MODULE_INFO("pssst_player", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
 
@@ -41,7 +41,12 @@ static void setup_callbacks(void) {
   if (thid >= 0)
     sceKernelStartThread(thid, 0, NULL);
 }
+static void load_test_image(PSPTexture *texture, const char *path) {
+  *texture = load_texture(path);
 
+  if (texture->pixels == NULL)
+    die("failed to load image");
+}
 int main(int argc, char *argv[]) {
   setup_callbacks();
 
@@ -135,13 +140,10 @@ int main(int argc, char *argv[]) {
     }
     start_frame();
 
-    // draw_rect(0, 0, 480, 272, (RGBA8888){.a = 255, .b = 0, .g = 0, .r = 255});
-    // draw_text8x16(100, 200, "hello world", 11,
-                  // (RGBA8888){.a = 255, .b = 0, .g = 255, .r = 125});
-	Clay_BeginLayout();
-build_ui(&lib, &config, selected, scroll, audio_get_current_index());
-Clay_RenderCommandArray cmds = Clay_EndLayout(0);
-clay_renderer_render(cmds);
+    Clay_BeginLayout();
+    build_ui(&lib, &config, selected, scroll, audio_get_current_index());
+    Clay_RenderCommandArray cmds = Clay_EndLayout(0);
+    clay_renderer_render(cmds);
 
     end_frame();
     // draw_list(&lib, &config, selected, scroll, audio_get_current_index());

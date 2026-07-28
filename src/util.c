@@ -95,6 +95,19 @@ int mkdir_p(const char *path)
     return 0;
 }
 
+
+uint32_t next_pow2_32(uint32_t n)
+{
+    if (n == 0) return 1;
+    n--;
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    return n + 1;
+}
+
 void die(const char *s)
 {
 	pspDebugScreenSetXY(100, 20);
