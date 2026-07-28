@@ -406,9 +406,15 @@ void ParseID3v2_4(const char *mp3path, struct ID3Tag *id3tag) {
     sceIoRead(fp, tag, 4);
     size -= 4;
 
-    /* read 4 byte big endian tag length */
+    /* read 4 byte big endian tag length (syncsafe in v2.4) */
     sceIoRead(fp, &tag_length, sizeof(unsigned int));
     tag_length = (unsigned int)swapInt32BigToHost((int)tag_length);
+    /* ID3v2.4 frame sizes are syncsafe integers (each byte's MSB is a
+       continuation flag, only 7 bits per byte carry data).  Without this
+       decode, any frame >127 bytes gets a wrong tag_length, so APIC
+       searchJPGstart reads garbage and picture offset/length are junk. */
+    tag_length = (((tag_length & 0x7f000000) >> 3) | ((tag_length & 0x7f0000) >> 2) |
+                  ((tag_length & 0x7f00) >> 1) | (tag_length & 0x7f));
     size -= 4;
 
     sceIoLseek(fp, 2, PSP_SEEK_CUR);
