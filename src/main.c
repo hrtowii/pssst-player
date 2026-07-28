@@ -1,14 +1,18 @@
 #include "audio/audio.h"
 #include "core/config.h"
-#include "util/defer.h"
+#include "core/file.h"
 #include "display/clay_renderer_ui.h"
 #include "display/font.h"
 #include "display/image.h"
-#include "core/file.h"
-#include "util/logging.h"
-#include "stdlib.h"
+#include "display/stb_image.h"
 #include "display/ui.h"
+#include "player/id3.h"
+#include "stdlib.h"
+#include "util/defer.h"
+#include "util/logging.h"
 #include "util/util.h"
+#define STB_IMAGE_RESIZE2_IMPLEMENTATION
+#include "display/stb_image_resize2.h"
 #include <pspctrl.h>
 #include <pspdebug.h>
 #include <pspgu.h>
@@ -91,11 +95,11 @@ int main(int argc, char *argv[]) {
   init_font_texture();
   init_clay();
 
-  int selected = 0;
-  int scroll = 0;
+  AppState app = {0};
+  app.lib = &lib;
+  app.config = &config;
 
   SceCtrlData pad, old = {0};
-
   while (1) {
     sceCtrlReadBufferPositive(&pad, 1);
     int pressed = pad.Buttons & ~old.Buttons;
@@ -105,23 +109,23 @@ int main(int argc, char *argv[]) {
       break;
 
     if (pressed & PSP_CTRL_UP) {
-      if (selected > 0) {
-        selected--;
-        if (selected < scroll)
-          scroll = selected;
+      if (app.selected > 0) {
+        app.selected--;
+        if (app.selected < app.scroll)
+          app.scroll = app.selected;
       }
     }
     if (pressed & PSP_CTRL_DOWN) {
-      if (selected < (int)lib.len - 1) {
-        selected++;
-        if (selected >= scroll + VISIBLE_ROWS)
-          scroll = selected - VISIBLE_ROWS + 1;
+      if (app.selected < (int)lib.len - 1) {
+        app.selected++;
+        if (app.selected >= app.scroll + VISIBLE_ROWS)
+          app.scroll = app.selected - VISIBLE_ROWS + 1;
       }
     }
 
     if (pressed & PSP_CTRL_CROSS) {
-      LOG_DEBUG(TAG, "playing song %d", selected);
-      audio_play_index(selected);
+      LOG_DEBUG(TAG, "playing song %d", app.selected);
+      audio_play_index(app.selected);
     }
     if (pressed & PSP_CTRL_CIRCLE) {
       if (audio_get_state() == AUDIO_STATE_PLAYING)
@@ -138,15 +142,57 @@ int main(int argc, char *argv[]) {
     if (pressed & PSP_CTRL_LTRIGGER) {
       audio_prev();
     }
-    start_frame();
+    if (pressed & PSP_CTRL_SELECT) {
+      app.playlist_collapsed = !app.playlist_collapsed;
+    }
 
+    int idx = audio_get_current_index();
+    if (idx != app.playing_index) {
+      app.playing_index = idx;
+
+      if (app.album_art.pixels) {
+        free(app.album_art.pixels);
+        app.album_art = (PSPTexture){0};
+      }
+// TODO move to its own thread with the ringbuf shit again
+      if (idx >= 0) {
+        ParseID3((char *)audio_get_current_path(), &app.id3);
+
+        size_t raw_len;
+        unsigned char *raw =
+            extract_album_art(audio_get_current_path(), &app.id3, &raw_len);
+        if (raw) {
+          int w, h, ch;
+          unsigned char *decoded =
+              stbi_load_from_memory(raw, (int)raw_len, &w, &h, &ch, 4);
+          if (decoded) {
+            int mw = w > 100 ? 100 : w;
+            int mh = h > 100 ? 100 : h;
+            if (mw > 0 && mh > 0) {
+              unsigned char *resized = malloc(mw * mh * 4);
+              if (resized) {
+                stbir_resize_uint8_linear(decoded, w, h, 0, resized, mw, mh, 0,
+                                          STBIR_RGBA);
+                app.album_art = create_texture_from_rgba(resized, mw, mh);
+                free(resized);
+              }
+            }
+            stbi_image_free(decoded);
+          }
+          free(raw);
+        }
+      }
+    }
+
+    app.current_sec = audio_get_current_second();
+    app.total_sec = audio_get_total_seconds();
+    start_frame();
     Clay_BeginLayout();
-    build_ui(&lib, &config, selected, scroll, audio_get_current_index());
+    build_ui(&app);
     Clay_RenderCommandArray cmds = Clay_EndLayout(0);
     clay_renderer_render(cmds);
 
     end_frame();
-    // draw_list(&lib, &config, selected, scroll, audio_get_current_index());
   }
   sceKernelExitGame();
   return 0;

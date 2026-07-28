@@ -9,6 +9,3 @@
 void init_font_texture(void);
 void draw_glyph(int x, int y, unsigned char c, RGBA8888 color);
 void draw_text8x16(int x, int y, const char *str, int len, RGBA8888 color);
-
-
-

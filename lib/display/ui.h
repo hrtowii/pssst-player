@@ -5,6 +5,7 @@
 #include "core/config.h"
 #include <psptypes.h>
 #include "display/clay.h"
+#include "player/id3.h"
 
 #define VISIBLE_ROWS 20
 #define PSP_BUF_WIDTH	512
@@ -40,8 +41,6 @@ typedef struct {
     short x, y, z;
 } TexVertex;
 
-
-
 unsigned int color_to_gu(RGBA8888 c);
 
 void draw_list(struct library *lib, struct config *config,
@@ -59,6 +58,22 @@ void clear_scissor(void);
 void start_frame(void);
 void end_frame(void);
 
-void build_ui(struct library *lib, struct config *config, int selected, int scroll, int playing_index);
+typedef struct {
+    struct library *lib;
+    struct config  *config;
+    int             selected;
+    int             scroll;
+    int             playing_index;
+
+    struct ID3Tag   id3;
+    PSPTexture      album_art;
+
+    int             current_sec;
+    int             total_sec;
+
+    bool            playlist_collapsed;
+} AppState;
+
+void build_ui(AppState *app);
 
 #endif

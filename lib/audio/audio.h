@@ -42,5 +42,7 @@ void audio_set_shuffle(bool on);
 audio_state_t audio_get_state(void);
 int           audio_get_current_index(void);
 const char   *audio_get_current_path(void);
+int           audio_get_total_seconds(void);
+int           audio_get_current_second(void);
 
 #endif

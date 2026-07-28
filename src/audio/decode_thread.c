@@ -4,7 +4,7 @@
 #include "audio/decode_thread.h"
 #include "audio/audio_internal.h"
 #include "util/ringbuf.h"
-#include "core/playlist.h"
+#include "player/playlist.h"
 #include "util/logging.h"
 
 #define TAG "decode_thread"
@@ -14,6 +14,8 @@ static struct mad_frame  g_frame;
 static struct mad_synth  g_synth;
 static SceUID            g_fd = -1;
 static bool               g_decoder_open = false;
+static bool               g_have_duration = false;
+static int                g_mp3_data_size = 0;
 
 
 static void decoder_close(void) {
@@ -23,6 +25,10 @@ static void decoder_close(void) {
     mad_stream_finish(&g_stream);
     if (g_fd >= 0) { sceIoClose(g_fd); g_fd = -1; }
     g_decoder_open = false;
+    g_have_duration = false;
+    g_mp3_data_size = 0;
+    g_total_seconds = 0;
+    g_output_frames = 0;
 }
 
 static bool decoder_fill(void) {
@@ -47,6 +53,9 @@ static bool decoder_open(const char *path) {
         LOG_ERR(TAG, "sceIoOpen failed: %d", g_fd);
         return false;
     }
+
+    g_mp3_data_size = sceIoLseek(g_fd, 0, PSP_SEEK_END);
+    sceIoLseek(g_fd, 0, PSP_SEEK_SET);
 
     mad_stream_init(&g_stream);
     // ^ dis zeros the struct which the mad_stream_buffer needs so initial run kaboom
@@ -122,6 +131,13 @@ int decode_thread(SceSize args, void *argp) {
                 continue;
             }
             continue; // recoverable decode error, skip frame
+        }
+
+        if (!g_have_duration) {
+            g_have_duration = true;
+            if (g_frame.header.bitrate > 0) {
+                g_total_seconds = (int)((g_mp3_data_size * 8) / g_frame.header.bitrate);
+            }
         }
 
         mad_synth_frame(&g_synth, &g_frame);

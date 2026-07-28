@@ -1,4 +1,4 @@
-#include "core/playlist.h"
+#include "player/playlist.h"
 #include "util/mt19937.h"
 #include <psprtc.h>
 

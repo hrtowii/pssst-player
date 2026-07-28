@@ -28,6 +28,8 @@ extern ring_buffer_t          g_ring;
 extern volatile audio_state_t g_state;
 extern volatile bool          g_running;
 extern int                    g_audio_channel;
+extern volatile int           g_total_seconds;
+extern volatile int           g_output_frames;
 
 // ---- track-switch mailbox ----
 // ONLY decode_thread ever calls decoder_open/decoder_close.
