@@ -22,7 +22,7 @@ static void decoder_close(void) {
 
 static bool decoder_open(const char *path) {
     if (g_decoder_open) decoder_close();
-
+// TODO: add libflac
     memcpy(&g_decoder, &decoder_mp3, sizeof(g_decoder));
     if (!g_decoder.open(&g_decoder, path)) {
         LOG_ERR(TAG, "decoder_open failed: %s", path);
