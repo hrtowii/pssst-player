@@ -13,5 +13,6 @@ struct decoder {
 };
 
 extern decoder_t decoder_mp3;
+extern decoder_t decoder_flac;
 
 #endif

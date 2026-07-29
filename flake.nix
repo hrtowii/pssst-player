@@ -42,6 +42,8 @@
           libmad = pkgs.stdenv.mkDerivation {
             pname = "psp-libmad";
             version = "unstable";
+	    dontStrip = true;
+	    # not needed but just in case bc it might brealk
             src = libmad-src;
 
             nativeBuildInputs = [
@@ -77,10 +79,12 @@
           libogg = pkgs.stdenv.mkDerivation {
             pname = "psp-libogg";
             version = "unstable";
+	    # NOTE TO SELF PLS KEEP THIS LINE IN
+	      dontStrip = true;
+
             src = libogg-src;
 
             nativeBuildInputs = [
-              pkgs.cmake
               pspdev.packages.${system}.psp-cmake
               pspdev.packages.${system}.pspsdk
               pspdev.packages.${system}.psp-gcc
@@ -89,19 +93,25 @@
 
             configurePhase = ''
               runHook preConfigure
-              psp-cmake -B build -S . -DCMAKE_INSTALL_PREFIX=$out -DBUILD_TESTING=OFF
-              runHook postConfigure
+	      local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
+    	      local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
+	      psp-cmake -B build -S . \
+      -DCMAKE_INSTALL_PREFIX=$out \
+      -DBUILD_TESTING=OFF \
+      -DCMAKE_AR="$psp_ar" \
+      -DCMAKE_RANLIB="$psp_ranlib" 
+
             '';
 
             buildPhase = ''
               runHook preBuild
-              cmake --build build -j$NIX_BUILD_CORES
+              psp-cmake --build build --verbose -j$NIX_BUILD_CORES
               runHook postBuild
             '';
 
             installPhase = ''
               runHook preInstall
-              cmake --install build
+              psp-cmake --install build
               runHook postInstall
             '';
           };
@@ -109,10 +119,12 @@
           libflac = pkgs.stdenv.mkDerivation {
             pname = "psp-libflac";
             version = "unstable";
+	    # NOTE TO SELF KEEP THIS IN 
+	      dontStrip = true;
+
             src = libflac-src;
 
             nativeBuildInputs = [
-              pkgs.cmake
               pspdev.packages.${system}.psp-cmake
               pspdev.packages.${system}.pspsdk
               pspdev.packages.${system}.psp-gcc
@@ -125,27 +137,34 @@
             #        > /nix/var/nix/builds/nix-2305-1326438599/source/src/libFLAC/include/private/bitreader.h:81:77: note: expected 'FLAC__int32 *' {aka 'long int *'} but argument is of type 'int *
             configurePhase = ''
                             runHook preConfigure
+			    local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
+    local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
+
                             psp-cmake -B build -S . \
-                              -DCMAKE_INSTALL_PREFIX=$out \
-                              -DBUILD_PROGRAMS=OFF \
-                              -DBUILD_EXAMPLES=OFF \
-                              -DBUILD_TESTING=OFF \
-              		-DINSTALL_MANPAGES=OFF \
-              		-DCMAKE_PREFIX_PATH="${libogg}" \
-                              -DOGG_INCLUDE_DIR="${libogg}/include" \
-                              -DOGG_LIBRARY="${libogg}/lib/libogg.a"
-                            runHook postConfigure
+      -DCMAKE_INSTALL_PREFIX=$out \
+      -DBUILD_PROGRAMS=OFF \
+      -DBUILD_EXAMPLES=OFF \
+      -DBUILD_TESTING=OFF \
+      -DINSTALL_MANPAGES=OFF \
+      -DCMAKE_PREFIX_PATH="${libogg}" \
+      -DOGG_INCLUDE_DIR="${libogg}/include" \
+      -DOGG_LIBRARY="${libogg}/lib/libogg.a" \
+      -DCMAKE_AR="$psp_ar" \
+      -DCMAKE_RANLIB="$psp_ranlib" \
+      -DENABLE_X86CPU=OFF \
+      -DENABLE_ARM_NEON=OFF
+      runHook postConfigure
             '';
 
             buildPhase = ''
               runHook preBuild
-              cmake --build build -j$NIX_BUILD_CORES
+              psp-cmake --build build --verbose -j$NIX_BUILD_CORES
               runHook postBuild
             '';
 
             installPhase = ''
               runHook preInstall
-              cmake --install build
+              psp-cmake --install build
               runHook postInstall
             '';
           };
@@ -153,6 +172,8 @@
         {
           packages = {
             libmad = libmad;
+	    libflac = libflac;
+	    libogg = libogg;
           };
           devShells.default = pkgs.mkShell {
             name = "psp-dev";

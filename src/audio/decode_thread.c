@@ -22,8 +22,24 @@ static void decoder_close(void) {
 
 static bool decoder_open(const char *path) {
     if (g_decoder_open) decoder_close();
-// TODO: add libflac
-    memcpy(&g_decoder, &decoder_mp3, sizeof(g_decoder));
+
+    const char *ext = strrchr(path, '.');
+    if (!ext) return false;
+
+    if ((ext[1] == 'm' || ext[1] == 'M') &&
+        (ext[2] == 'p' || ext[2] == 'P') &&
+        (ext[3] == '3')) {
+        memcpy(&g_decoder, &decoder_mp3, sizeof(g_decoder));
+    } else if ((ext[1] == 'f' || ext[1] == 'F') &&
+               (ext[2] == 'l' || ext[2] == 'L') &&
+               (ext[3] == 'a' || ext[3] == 'A') &&
+               (ext[4] == 'c' || ext[4] == 'C')) {
+        memcpy(&g_decoder, &decoder_flac, sizeof(g_decoder));
+    } else {
+        LOG_ERR(TAG, "unsupported extension: %s", ext);
+        return false;
+    }
+
     if (!g_decoder.open(&g_decoder, path)) {
         LOG_ERR(TAG, "decoder_open failed: %s", path);
         return false;

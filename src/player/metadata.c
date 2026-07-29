@@ -10,6 +10,12 @@ metadata_loader_t *metadata_loader_for(const char *path) {
         (ext[3] == '3')) {
         return &metadata_mp3;
     }
+    if ((ext[1] == 'f' || ext[1] == 'F') &&
+        (ext[2] == 'l' || ext[2] == 'L') &&
+        (ext[3] == 'a' || ext[3] == 'A') &&
+        (ext[4] == 'c' || ext[4] == 'C')) {
+        return &metadata_flac;
+    }
     return NULL;
 }
 
