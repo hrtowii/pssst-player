@@ -36,6 +36,22 @@
         "type": "github"
       }
     },
+    "libflac-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784453564,
+        "narHash": "sha256-y9p+sI+I+xDMiftmU+m2Mv/SAaPsAwBPugiofhHYalM=",
+        "owner": "xiph",
+        "repo": "flac",
+        "rev": "e94ff9f68b8e7dbd3e9f8b1ac18a8eca1914f181",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiph",
+        "repo": "flac",
+        "type": "github"
+      }
+    },
     "libmad-src": {
       "flake": false,
       "locked": {
@@ -49,6 +65,22 @@
       "original": {
         "owner": "pspdev",
         "repo": "libmad",
+        "type": "github"
+      }
+    },
+    "libogg-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1772457035,
+        "narHash": "sha256-neCZLIrl3Uw58/N3FM3pm6Y7gV8WuVmJgfs9wfTK1to=",
+        "owner": "xiph",
+        "repo": "ogg",
+        "rev": "06a5e0262cdc28aa4ae6797627a783b5010440f0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiph",
+        "repo": "ogg",
         "type": "github"
       }
     },
@@ -99,24 +131,6 @@
         "type": "github"
       }
     },
-    "oslib-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1778404020,
-        "narHash": "sha256-rP8Iq685Ftnneo3yg+h+SYwyAkVLQyURfh3iRGJyI9k=",
-        "ref": "refs/heads/master",
-        "rev": "3030df2ab783614946b45e84892db4aa5fe0ebee",
-        "revCount": 334,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/dogo/oslib"
-      },
-      "original": {
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/dogo/oslib"
-      }
-    },
     "pspdev": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -139,9 +153,10 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "libflac-src": "libflac-src",
         "libmad-src": "libmad-src",
+        "libogg-src": "libogg-src",
         "nixpkgs": "nixpkgs",
-        "oslib-src": "oslib-src",
         "pspdev": "pspdev"
       }
     },

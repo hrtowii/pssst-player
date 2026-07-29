@@ -14,6 +14,7 @@ find_library(MAD_LIBRARY mad
     NO_CMAKE_FIND_ROOT_PATH
     REQUIRED
 )
+
 find_path(MAD_INCLUDE_DIR mad.h
     HINTS
         $ENV{LIBMAD_INCDIR}
@@ -21,26 +22,44 @@ find_path(MAD_INCLUDE_DIR mad.h
     NO_CMAKE_FIND_ROOT_PATH
     REQUIRED
 )
-#
-# find_library(OSL_LIBRARY osl
-#     HINTS
-#         $ENV{OSLIB_LIBDIR}
-#         ${CMAKE_SOURCE_DIR}/lib
-#     NO_CMAKE_FIND_ROOT_PATH
-#     REQUIRED
-# )
-# find_path(OSL_INCLUDE_DIR oslib/oslib.h
-#     HINTS
-#         $ENV{OSLIB_INCDIR}
-#         ${CMAKE_SOURCE_DIR}/lib
-#     NO_CMAKE_FIND_ROOT_PATH
-#     REQUIRED
-# )
+
+find_library(OGG_LIBRARY ogg
+    HINTS
+        $ENV{LIBOGG_LIBDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
+
+find_path(OGG_INCLUDE_DIR ogg/ogg.h
+    HINTS
+        $ENV{LIBOGG_INCDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
+
+find_library(FLAC_LIBRARY FLAC
+    HINTS
+        $ENV{LIBFLAC_LIBDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
+
+find_path(FLAC_INCLUDE_DIR FLAC/stream_decoder.h
+    HINTS
+        $ENV{LIBFLAC_INCDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/lib
     ${MAD_INCLUDE_DIR}
-    # ${OSL_INCLUDE_DIR}
+    ${OGG_INCLUDE_DIR}
+    ${FLAC_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -53,7 +72,8 @@ target_link_libraries(${PROJECT_NAME}
     pspdebug
     m
     ${MAD_LIBRARY}
-    # ${OSL_LIBRARY}
+    ${FLAC_LIBRARY}
+    ${OGG_LIBRARY}
     # me-core
 )
 
