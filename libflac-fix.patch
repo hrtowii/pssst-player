@@ -1,0 +1,32 @@
+diff --git a/src/libFLAC/metadata_iterators.c b/src/libFLAC/metadata_iterators.c
+index 0000000..0000000 100644
+--- a/src/libFLAC/metadata_iterators.c
++++ b/src/libFLAC/metadata_iterators.c
+@@ -1297,6 +1297,18 @@ static FLAC__bool get_file_stats_(const char *filename, struct stat *stats)
+ 	return true;
+ }
+ 
++#ifdef __PSP__
++
++static FLAC__bool set_file_stats_(const char *filename, const struct stat *stats)
++{
++	(void)filename;
++	(void)stats;
++
++	return true;
++}
++
++#else
++
+ static FLAC__bool set_file_stats_(const char *filename, const struct stat *stats)
+ {
+ 	int ret;
+@@ -1344,6 +1356,8 @@ static FLAC__bool set_file_stats_(const char *filename, const struct stat *stats
+ 
+ 	return true;
+ }
+ 
++#endif
++
+ static FLAC__bool write_metadata_block_data_(FILE *file, const FLAC__StreamMetadata *block)
+ {

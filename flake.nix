@@ -123,7 +123,9 @@
 	      dontStrip = true;
 
             src = libflac-src;
-
+  patches = [
+    ./libflac-fix.patch
+  ];
             nativeBuildInputs = [
               pspdev.packages.${system}.psp-cmake
               pspdev.packages.${system}.pspsdk
