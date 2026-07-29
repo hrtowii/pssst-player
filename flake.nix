@@ -13,7 +13,7 @@
       flake = false;
     };
     libflac-src = {
-      url = "github:xiph/flac";
+      url = "github:xiph/flac/e94ff9f68b8e7dbd3e9f8b1ac18a8eca1914f181";
       flake = false;
     };
   };

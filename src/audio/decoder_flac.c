@@ -74,28 +74,53 @@ static FLAC__bool eof_cb(
     return p->eos;
 }
 
+static short flac_sample_to_s16(
+    FLAC__int32 sample,
+    unsigned bits_per_sample)
+{
+    if (bits_per_sample > 16) 
+	sample >>= bits_per_sample - 16;
+    else if (bits_per_sample < 16)
+        sample <<= 16 - bits_per_sample;
+
+    return (short)sample;
+}
+
 static FLAC__StreamDecoderWriteStatus write_cb(
     const FLAC__StreamDecoder *decoder,
     const FLAC__Frame *frame,
     const FLAC__int32 * const buffer[],
     void *client_data)
 {
+    (void)decoder;
+
     flac_priv_t *p = client_data;
     int n = frame->header.blocksize;
     int ch = frame->header.channels;
+    unsigned bps = frame->header.bits_per_sample;
+
     if (ch != 2) {
         for (int i = 0; i < n; i++) {
-            p->pcm_buf[i * 2]     = (short)buffer[0][i];
-            p->pcm_buf[i * 2 + 1] = (short)buffer[0][i];
+	    //downsample from 24 to 16 bits because the PSP only supports 16/44.1khz, so 48khz songs are also fcked basically
+	    //TODO i gotta handle downsampling from 48 to 44.1khz and for the time calcs as well, do i set up another fcking thread
+            short sample = flac_sample_to_s16(buffer[0][i], bps);
+
+            p->pcm_buf[i * 2]     = sample;
+            p->pcm_buf[i * 2 + 1] = sample;
         }
-    } else {
+    } else { // fallback to mono bc ngl i dont think the psp can play multiple channels either
         for (int i = 0; i < n; i++) {
-            p->pcm_buf[i * 2]     = (short)buffer[0][i];
-            p->pcm_buf[i * 2 + 1] = (short)buffer[1][i];
+            p->pcm_buf[i * 2] =
+                flac_sample_to_s16(buffer[0][i], bps);
+
+            p->pcm_buf[i * 2 + 1] =
+                flac_sample_to_s16(buffer[1][i], bps);
         }
     }
+
     p->pcm_frames = n;
     p->pcm_pos = 0;
+
     return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
 

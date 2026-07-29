@@ -1,32 +1,28 @@
 diff --git a/src/libFLAC/metadata_iterators.c b/src/libFLAC/metadata_iterators.c
-index 0000000..0000000 100644
+index 35137496..8b2f582a 100644
 --- a/src/libFLAC/metadata_iterators.c
 +++ b/src/libFLAC/metadata_iterators.c
-@@ -1297,6 +1297,18 @@ static FLAC__bool get_file_stats_(const char *filename, struct stat *stats)
- 	return true;
+@@ -3602,7 +3602,15 @@ FLAC__bool get_file_stats_(const char *filename, struct flac_stat_s *stats)
+        FLAC__ASSERT(0 != stats);
+        return (0 == flac_stat(filename, stats));
  }
- 
 +#ifdef __PSP__
-+
-+static FLAC__bool set_file_stats_(const char *filename, const struct stat *stats)
+
++void set_file_stats_(const char *filename, struct flac_stat_s *stats)
 +{
-+	(void)filename;
-+	(void)stats;
-+
-+	return true;
++    (void)filename;
++    (void)stats;
 +}
 +
 +#else
-+
- static FLAC__bool set_file_stats_(const char *filename, const struct stat *stats)
+ void set_file_stats_(const char *filename, struct flac_stat_s *stats)
  {
- 	int ret;
-@@ -1344,6 +1356,8 @@ static FLAC__bool set_file_stats_(const char *filename, const struct stat *stats
- 
- 	return true;
+ #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200809L) && !defined(_WIN32)
+@@ -3629,6 +3637,7 @@ void set_file_stats_(const char *filename, struct flac_stat_s *stats)
+        FLAC_CHECK_RETURN(chown(filename, -1, stats->st_gid));
+ #endif
  }
- 
 +#endif
-+
- static FLAC__bool write_metadata_block_data_(FILE *file, const FLAC__StreamMetadata *block)
+
+ int fseek_wrapper_(FLAC__IOHandle handle, FLAC__int64 offset, int whence)
  {
