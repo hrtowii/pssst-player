@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
         metadata_loader_t *loader = metadata_loader_for(audio_get_current_path());
         if (loader) loader->load(loader, audio_get_current_path(), &app.meta);
         app.total_sec = app.meta.total_seconds;
-
+	// TODO move this to its own thread bc big image resizes hang the whole thing up
         app.album_art = album_art_from_metadata(&app.meta);
         app.bg_texture_data = build_background_texture(&app.album_art);
         app.has_bg_texture = app.bg_texture_data.pixels != NULL;

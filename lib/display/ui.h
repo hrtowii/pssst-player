@@ -8,6 +8,8 @@
 #include "player/metadata.h"
 
 #define VISIBLE_ROWS 14
+#define BG_W 24
+#define BG_H 14
 
 typedef struct {
     struct library *lib;

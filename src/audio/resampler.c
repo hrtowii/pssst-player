@@ -1,9 +1,10 @@
 #include "audio/resampler.h"
+#include "util/logging.h"
 #include <stdint.h>
 #define RESAMPLER_FRAC_BITS 32
 #define RESAMPLER_ONE (1ULL << RESAMPLER_FRAC_BITS)
 #define RESAMPLER_FRAC_MASK (RESAMPLER_ONE - 1)
-
+#define TAG	"resampler"
 /*
  * fraction == 0
  *     result = a
@@ -20,6 +21,7 @@ static int16_t resampler_lerp_s16(int16_t a, int16_t b, uint32_t fraction) {
 }
 
 int resampler_init(resampler_t *resampler, int input_rate, int output_rate) {
+	LOG_DEBUG(TAG, "resample initing");
   if (!resampler || input_rate <= 0 || output_rate <= 0) {
     return -1;
   }

@@ -1,5 +1,3 @@
-#define BG_W 24
-#define BG_H 14
 #include <stdint.h>
 #include "display/ui.h"
 #include "display/image.h"

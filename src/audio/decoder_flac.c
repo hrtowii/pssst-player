@@ -7,13 +7,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define TAG "FLAC"
+
 #define FLAC_RESAMPLE_BUFFER_FRAMES (FLAC__MAX_BLOCK_SIZE * 2)
-#define FLAC_PCM_BUFFER_FRAMES FLAC__MAX_BLOCK_SIZE
+#define FLAC_PCM_BUFFER_FRAMES (FLAC__MAX_BLOCK_SIZE + 1)
 
 typedef struct {
   FLAC__StreamDecoder *decoder;
   SceUID fd;
-  short pcm_buf[FLAC__MAX_BLOCK_SIZE * 2];
+
+  short pcm_buf[FLAC_PCM_BUFFER_FRAMES * 2];
   int pcm_frames;
   int pcm_pos;
 
@@ -201,7 +204,7 @@ static bool flac_open(decoder_t *self, const char *path) {
   }
 
   if (resampler_init(&p->resampler, p->sample_rate, AUDIO_SAMPLE_RATE) < 0) {
-
+    LOG_ERR(TAG, "resample init FAIL");
     FLAC__stream_decoder_finish(p->decoder);
 
     FLAC__stream_decoder_delete(p->decoder);
@@ -219,88 +222,83 @@ static bool flac_open(decoder_t *self, const char *path) {
 static int flac_read_pcm(decoder_t *self, short *buf, int frames) {
   flac_priv_t *p = self->priv;
 
-  if (!p)
+  if (!p || !buf || frames <= 0)
     return 0;
 
   int written = 0;
 
   while (written < frames) {
-    /*
-     * If there is no decoded PCM waiting,
-     * ask libFLAC to decode another frame.
-     */
-    if (p->pcm_pos >= p->pcm_frames) {
-      p->pcm_frames = 0;
-      p->pcm_pos = 0;
-
+    if (p->pcm_frames - p->pcm_pos < 2) {
       if (p->eos)
         break;
 
       if (!FLAC__stream_decoder_process_single(p->decoder)) {
-
         FLAC__StreamDecoderState state =
             FLAC__stream_decoder_get_state(p->decoder);
 
-        if (state == FLAC__STREAM_DECODER_END_OF_STREAM) {
+        if (state == FLAC__STREAM_DECODER_END_OF_STREAM)
           p->eos = true;
-        }
 
         break;
       }
 
       if (FLAC__stream_decoder_get_state(p->decoder) ==
           FLAC__STREAM_DECODER_END_OF_STREAM) {
-
         p->eos = true;
       }
 
       /*
-       * The callback may not have produced
-       * a PCM frame.
+       * process_single() may process metadata or otherwise produce
+       * no PCM. Go around the loop and try again.
        */
-      if (p->pcm_frames <= 0)
+      if (p->pcm_frames - p->pcm_pos < 2)
         continue;
     }
 
     int available = p->pcm_frames - p->pcm_pos;
     int output_space = frames - written;
+
     int output_cap = output_space;
     if (output_cap > FLAC_RESAMPLE_BUFFER_FRAMES)
       output_cap = FLAC_RESAMPLE_BUFFER_FRAMES;
+
     int input_consumed = 0;
+
     int produced =
         resampler_process(&p->resampler, p->pcm_buf + p->pcm_pos * 2, available,
                           p->resample_buf, output_cap, &input_consumed);
 
     if (produced > 0) {
       memcpy(buf + written * 2, p->resample_buf, produced * 2 * sizeof(short));
+
       written += produced;
     }
 
     p->pcm_pos += input_consumed;
 
     /*
-     * If the resampler couldn't produce anything
-     * and didn't consume anything, we need more
-     * input.
+     * The resampler needs more input. Do not return zero to the
+     * decode thread; decode another FLAC block and let write_cb()
+     * preserve and append the remaining input.
      */
     if (produced == 0 && input_consumed == 0) {
+      if (p->eos)
+        break;
 
-      /*
-       * Preserve the final input frame because
-       * it is needed for interpolation with the
-       * first frame of the next FLAC block.
-       */
-      if (available > 0) {
-        p->pcm_buf[0] = p->pcm_buf[(p->pcm_frames - 1) * 2];
+      if (!FLAC__stream_decoder_process_single(p->decoder)) {
+        FLAC__StreamDecoderState state =
+            FLAC__stream_decoder_get_state(p->decoder);
 
-        p->pcm_buf[1] = p->pcm_buf[(p->pcm_frames - 1) * 2 + 1];
+        if (state == FLAC__STREAM_DECODER_END_OF_STREAM)
+          p->eos = true;
 
-        p->pcm_frames = 1;
-        p->pcm_pos = 0;
+        break;
       }
 
-      break;
+      if (FLAC__stream_decoder_get_state(p->decoder) ==
+          FLAC__STREAM_DECODER_END_OF_STREAM) {
+        p->eos = true;
+      }
     }
   }
 

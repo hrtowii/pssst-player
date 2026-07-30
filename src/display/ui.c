@@ -8,32 +8,35 @@
 #include "util/util.h"
 #include <string.h>
 
-#define ROW_H        16
-#define GLYPH_W      8
-#define BG_W         24
-#define BG_H         14
+#define ROW_H 16
 
 static inline Clay_BorderElementConfig border_all(void) {
-  return (Clay_BorderElementConfig){
-      .color = COLOR_BORDER,
-      .width = {.left = BORDER_W, .right = BORDER_W,
-                .top = BORDER_W, .bottom = BORDER_W,
-                .betweenChildren = 0}};
+  return (Clay_BorderElementConfig){.color = COLOR_BORDER,
+                                    .width = {.left = BORDER_W,
+                                              .right = BORDER_W,
+                                              .top = BORDER_W,
+                                              .bottom = BORDER_W,
+                                              .betweenChildren = 0}};
 }
 
 static void format_time(int seconds, char *buf, size_t buflen) {
-  if (seconds < 0) seconds = 0;
+  if (seconds < 0)
+    seconds = 0;
   snprintf(buf, buflen, "%d:%02d", seconds / 60, seconds % 60);
 }
 
 static void truncate_to_width(char *buf, size_t buflen, int max_px) {
   int max_chars = max_px / GLYPH_W;
-  if (max_chars < 4) max_chars = 4;
+  if (max_chars < 4)
+    max_chars = 4;
   int len = (int)strlen(buf);
-  if (len <= max_chars) return;
+  if (len <= max_chars)
+    return;
   int cut = max_chars - 3;
-  if (cut < 0) cut = 0;
-  if ((size_t)(cut + 4) > buflen) cut = (int)buflen - 4;
+  if (cut < 0)
+    cut = 0;
+  if ((size_t)(cut + 4) > buflen)
+    cut = (int)buflen - 4;
   snprintf(buf + cut, buflen - cut, "...");
 }
 
@@ -60,9 +63,8 @@ void list_row_component(struct library *lib, int index, bool is_selected,
                       .padding = {.left = 2, .right = 2}},
            .backgroundColor = bg,
            .clip = {.horizontal = true, .vertical = true}}) {
-    CLAY_TEXT(row_str, CLAY_TEXT_CONFIG(
-                           {.fontSize = GLYPH_H,
-                            .textColor = COLOR_TEXT_PRIMARY}));
+    CLAY_TEXT(row_str, CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
+                                         .textColor = COLOR_TEXT_PRIMARY}));
   }
 }
 
@@ -73,8 +75,7 @@ static void render_list(struct library *lib, int selected, int scroll,
   if (end > (int)lib->len)
     end = (int)lib->len;
   for (int i = start; i < end; i++) {
-    list_row_component(lib, i, i == selected, i == playing_index,
-                       row_width_px);
+    list_row_component(lib, i, i == selected, i == playing_index, row_width_px);
   }
 }
 
@@ -93,8 +94,31 @@ void build_ui(AppState *app) {
                       .layoutDirection = CLAY_TOP_TO_BOTTOM,
                       .childGap = 4,
                       .padding = CLAY_PADDING_ALL(4)},
-           .backgroundColor = COLOR_BACKGROUND,
-            .image = {.imageData = has_bg ? &app->bg_texture_data : NULL}}) {
+           	      .backgroundColor = has_bg ? (Clay_Color){0} : COLOR_BACKGROUND
+    }) {
+
+    if (has_bg) {
+        CLAY(CLAY_ID("Background"),
+             (Clay_ElementDeclaration){
+                 .layout = {
+                     .sizing = {
+                         CLAY_SIZING_GROW(0),
+                         CLAY_SIZING_GROW(0)
+                     }
+                 },
+                 .image = {
+                     .imageData = &app->bg_texture_data
+                 },
+                 .floating = {
+                     .attachTo = CLAY_ATTACH_TO_PARENT,
+                     .attachPoints = {
+                         .element = CLAY_ATTACH_POINT_LEFT_TOP,
+                         .parent = CLAY_ATTACH_POINT_LEFT_TOP
+                     },
+                     .zIndex = -1
+                 }
+             }) {}
+    }
 
     CLAY(CLAY_ID("MainRow"),
          (Clay_ElementDeclaration){
@@ -110,9 +134,10 @@ void build_ui(AppState *app) {
                             .layoutDirection = CLAY_TOP_TO_BOTTOM,
                             .childGap = 2,
                             .padding = CLAY_PADDING_ALL(2)},
+                 .backgroundColor = COLOR_BACKGROUND,
                  .border = border_all()}) {
-          render_list(app->lib, app->selected, app->scroll,
-                     app->playing_index, left_panel_px);
+          render_list(app->lib, app->selected, app->scroll, app->playing_index,
+                      left_panel_px);
         }
       }
 
@@ -121,19 +146,21 @@ void build_ui(AppState *app) {
                .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
                                      .height = CLAY_SIZING_GROW(0)},
                           .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                          .childGap = 4,
-                          .padding = CLAY_PADDING_ALL(2)},
-               .border = show_left ? (Clay_BorderElementConfig){0} : border_all()}) {
+                          .childGap = 6},
+               .border =
+                   show_left ? (Clay_BorderElementConfig){0} : border_all()}) {
 
         if (playing) {
-           CLAY(CLAY_ID("NowPlayingRow"),
-                (Clay_ElementDeclaration){
-                    .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
-                                          .height = CLAY_SIZING_FIT(0)},
+          CLAY(CLAY_ID("NowPlayingRow"),
+               (Clay_ElementDeclaration){
+                   .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
+                                         .height = CLAY_SIZING_FIT(0)},
                               .layoutDirection = CLAY_LEFT_TO_RIGHT,
                               .childGap = 4,
                               .padding = CLAY_PADDING_ALL(2)},
-                   .border = border_all()}) {
+                   .backgroundColor = COLOR_BACKGROUND,
+                   .border = show_left ? border_all()
+                                       : (Clay_BorderElementConfig){0}}) {
 
             if (app->album_art.pixels) {
               CLAY(CLAY_ID("AlbumArt"),
@@ -158,28 +185,35 @@ void build_ui(AppState *app) {
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = COLOR_TEXT_PRIMARY}));
 
-              Clay_String artist_str = {
-                  .chars = app->meta.artist,
-                  .length = (int32_t)strlen(app->meta.artist)};
+              Clay_String artist_str = {.chars = app->meta.artist,
+                                        .length =
+                                            (int32_t)strlen(app->meta.artist)};
               CLAY_TEXT(artist_str,
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = COLOR_TEXT_SECONDARY}));
 
-              Clay_String genre_str = {
-                  .chars = app->meta.genre,
-                  .length = (int32_t)strlen(app->meta.genre)};
+              Clay_String genre_str = {.chars = app->meta.genre,
+                                       .length =
+                                           (int32_t)strlen(app->meta.genre)};
               CLAY_TEXT(genre_str,
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = COLOR_TEXT_MUTED}));
             }
           }
 
+          CLAY(CLAY_ID("RightPanelSpacer"),
+               (Clay_ElementDeclaration){
+                   .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
+                                         .height = CLAY_SIZING_GROW(0)}}}) {}
+
           CLAY(CLAY_ID("ProgressWrap"),
                (Clay_ElementDeclaration){
                    .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
                                          .height = CLAY_SIZING_FIT(0)},
                               .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                              .childGap = 2},
+                              .childGap = 2,
+                              .padding = CLAY_PADDING_ALL(4),
+                              .childAlignment = {.y = CLAY_ALIGN_Y_BOTTOM}},
                    .border = border_all()}) {
 
             CLAY(CLAY_ID("ProgressBar"),
@@ -190,14 +224,17 @@ void build_ui(AppState *app) {
 
               if (app->total_sec > 0) {
                 float pct = (float)app->current_sec / (float)app->total_sec;
-                if (pct > 1.0f) pct = 1.0f;
-                if (pct < 0.0f) pct = 0.0f;
+                if (pct > 1.0f)
+                  pct = 1.0f;
+                if (pct < 0.0f)
+                  pct = 0.0f;
 
-                CLAY(CLAY_ID("ProgressFill"),
-                     (Clay_ElementDeclaration){
-                         .layout = {.sizing = {.width = CLAY_SIZING_PERCENT(pct),
-                                               .height = CLAY_SIZING_GROW(0)}},
-                         .backgroundColor = COLOR_ACCENT}) {}
+                CLAY(
+                    CLAY_ID("ProgressFill"),
+                    (Clay_ElementDeclaration){
+                        .layout = {.sizing = {.width = CLAY_SIZING_PERCENT(pct),
+                                              .height = CLAY_SIZING_GROW(0)}},
+                        .backgroundColor = COLOR_ACCENT}) {}
               }
             }
 
@@ -220,18 +257,20 @@ void build_ui(AppState *app) {
               CLAY_TEXT(cur_str,
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = COLOR_TEXT_SECONDARY}));
-              CLAY(CLAY_ID("TimeSpacer"),
-                   (Clay_ElementDeclaration){
-                       .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
-                                             .height = CLAY_SIZING_FIXED(1)}}}) {}
+              CLAY(
+                  CLAY_ID("TimeSpacer"),
+                  (Clay_ElementDeclaration){
+                      .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
+                                            .height = CLAY_SIZING_FIXED(1)}}}) {
+              }
               CLAY_TEXT(tot_str,
                         CLAY_TEXT_CONFIG({.fontSize = GLYPH_H,
                                           .textColor = COLOR_TEXT_SECONDARY}));
             }
           }
         } else {
-          render_list(app->lib, app->selected, app->scroll,
-                     app->playing_index, SCREEN_W - 8);
+          render_list(app->lib, app->selected, app->scroll, app->playing_index,
+                      SCREEN_W - 8);
         }
       }
     }
