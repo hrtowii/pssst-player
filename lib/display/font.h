@@ -1,4 +1,4 @@
-#include "display/ui.h"
+#include "display/graphics.h"
 #define GLYPH_W 8
 #define GLYPH_H 16
 #define ATLAS_COLS 16

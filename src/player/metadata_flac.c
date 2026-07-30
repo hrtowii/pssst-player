@@ -1,28 +1,9 @@
 #include "player/metadata.h"
+#include "util/util.h"
 #include <FLAC/metadata.h>
 #include <pspiofilemgr.h>
 #include <stdlib.h>
 #include <string.h>
-
-static void filename_to_title(const char *path, char *out, size_t outsz) {
-  const char *start = strrchr(path, '/');
-  if (!start)
-    start = strrchr(path, '\\');
-  if (!start)
-    start = path;
-  else
-    start++;
-  const char *dot = strrchr(start, '.');
-  size_t n;
-  if (dot)
-    n = dot - start;
-  else
-    n = strlen(start);
-  if (n >= outsz)
-    n = outsz - 1;
-  memcpy(out, start, n);
-  out[n] = '\0';
-}
 
 static bool flac_load(metadata_loader_t *self, const char *path,
                       metadata_t *out) {

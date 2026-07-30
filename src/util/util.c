@@ -114,3 +114,29 @@ void die(const char *s)
         pspDebugScreenPrintf("%s", s);
 	// sceKernelExitGame();
 }
+
+const char *path_basename(const char *path) {
+  const char *slash = strrchr(path, '/');
+  if (!slash) slash = strrchr(path, '\\');
+  return slash ? slash + 1 : path;
+}
+
+void filename_to_title(const char *path, char *out, size_t outsz) {
+  const char *start = strrchr(path, '/');
+  if (!start)
+    start = strrchr(path, '\\');
+  if (!start)
+    start = path;
+  else
+    start++;
+  const char *dot = strrchr(start, '.');
+  size_t n;
+  if (dot)
+    n = dot - start;
+  else
+    n = strlen(start);
+  if (n >= outsz)
+    n = outsz - 1;
+  memcpy(out, start, n);
+  out[n] = '\0';
+}

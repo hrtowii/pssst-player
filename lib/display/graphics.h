@@ -1,0 +1,58 @@
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "display/clay.h"
+
+#define PSP_BUF_WIDTH  512
+#define PSP_SCR_WIDTH  480
+#define PSP_SCR_HEIGHT 272
+#define SCREEN_W        PSP_SCR_WIDTH
+#define BORDER_W        1
+
+extern unsigned int display_list[16384];
+
+typedef struct {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+} __attribute__((packed)) RGBA8888;
+
+typedef struct {
+    unsigned int color;
+    short x, y, z;
+} Vertex;
+
+typedef struct {
+    int width;
+    int height;
+    int textureWidth;
+    int textureHeight;
+
+    void *pixels;
+} PSPTexture;
+
+typedef struct {
+    float u, v;
+    unsigned int color;
+    short x, y, z;
+} TexVertex;
+
+unsigned int color_to_gu(RGBA8888 c);
+
+void init_graphics(void);
+void terminate_graphics(void);
+
+void draw_rect(int x, int y, int w, int h, RGBA8888 color);
+void draw_border(int x, int y, int w, int h, RGBA8888 color, Clay_BorderWidth width);
+void draw_texture(int x, int y, int w, int h, PSPTexture *texture);
+
+void set_scissor(int x, int y, int w, int h);
+void clear_scissor(void);
+
+void start_frame(void);
+void end_frame(void);
+
+#endif

@@ -1,4 +1,4 @@
-#include "display/ui.h"
+#include "display/graphics.h"
 #include "player/metadata.h"
 #include <stddef.h>
 

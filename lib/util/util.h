@@ -12,3 +12,7 @@ void die(const char* s);
 uint32_t next_pow2_32(uint32_t n);
 int mkdir_p(const char *path);
 
+const char *path_basename(const char *path);
+
+void filename_to_title(const char *path, char *out, size_t outsz);
+

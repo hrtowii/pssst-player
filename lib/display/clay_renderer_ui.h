@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "display/clay.h"
 
-#include "display/ui.h"
+#include "display/graphics.h"
 
 void init_clay();
 

@@ -3,6 +3,7 @@
 #include "core/file.h"
 #include "display/clay_renderer_ui.h"
 #include "display/font.h"
+#include "display/bg.h"
 #include "display/image.h"
 #include "display/ui.h"
 #include "player/metadata.h"
@@ -151,6 +152,11 @@ int main(int argc, char *argv[]) {
         free(app.album_art.pixels);
         app.album_art = (PSPTexture){0};
       }
+      if (app.bg_texture_data.pixels) {
+        free(app.bg_texture_data.pixels);
+        app.bg_texture_data = (PSPTexture){0};
+      }
+      app.has_bg_texture = false;
       if (idx >= 0) {
         metadata_free(&app.meta);
         metadata_loader_t *loader = metadata_loader_for(audio_get_current_path());
@@ -158,6 +164,8 @@ int main(int argc, char *argv[]) {
         app.total_sec = app.meta.total_seconds;
 
         app.album_art = album_art_from_metadata(&app.meta);
+        app.bg_texture_data = build_background_texture(&app.album_art);
+        app.has_bg_texture = app.bg_texture_data.pixels != NULL;
       }
     }
 
