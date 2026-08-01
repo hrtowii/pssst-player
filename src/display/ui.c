@@ -10,6 +10,8 @@
 
 #define ROW_H 16
 
+volatile UiDirty ui_dirty = {0};
+
 static inline Clay_BorderElementConfig border_all(void) {
   return (Clay_BorderElementConfig){.color = COLOR_BORDER,
                                     .width = {.left = BORDER_W,

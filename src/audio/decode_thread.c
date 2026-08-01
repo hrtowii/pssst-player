@@ -5,6 +5,7 @@
 #include "util/logging.h"
 #include "util/ringbuf.h"
 #include <pspiofilemgr.h>
+#include <psprtc.h>
 #include <string.h>
 
 #define TAG "decode_thread"
@@ -58,6 +59,9 @@ static bool decoder_open(const char *path) {
 }
 
 static void handle_pending_switch(void) {
+  if (g_switch_kind == SWITCH_NONE)
+    return;
+
   switch_kind_t kind;
   char path[MAX_PATH];
 
@@ -92,7 +96,8 @@ static void handle_pending_switch(void) {
 int decode_thread(SceSize args, void *argp) {
   (void)args;
   (void)argp;
-  short pcm_chunk[AUDIO_CHUNK_FRAMES * AUDIO_CHANNELS];
+  short pcm_chunk[AUDIO_CHUNK_FRAMES * AUDIO_CHANNELS]
+      __attribute__((aligned(64)));
 
   while (g_running) {
 
@@ -102,16 +107,11 @@ int decode_thread(SceSize args, void *argp) {
       sceKernelDelayThread(10 * 100);
       continue;
     }
-
-    int free = ring_frames_free(&g_ring);
-
-    if (free < AUDIO_CHUNK_FRAMES) {
-      sceKernelDelayThread(500);
+    if (ring_frames_available(&g_ring) >= 32768) {
+      sceKernelDelayThread(5000);
       continue;
     }
-
     int n = g_decoder.read_pcm(&g_decoder, pcm_chunk, AUDIO_CHUNK_FRAMES);
-
     if (n <= 0) {
       const char *next = playlist_advance(&g_pl);
       decoder_close();
@@ -122,6 +122,7 @@ int decode_thread(SceSize args, void *argp) {
     }
 
     ring_push(&g_ring, pcm_chunk, n);
+    sceKernelDelayThread(1000);
   }
 
   decoder_close();

@@ -7,8 +7,7 @@
 
 int output_thread(SceSize args, void *argp) {
     (void)args; (void)argp;
-    short out_chunk[AUDIO_CHUNK_FRAMES * AUDIO_CHANNELS];
-
+    short out_chunk[AUDIO_CHUNK_FRAMES * AUDIO_CHANNELS] __attribute__((aligned(64)));
     while (g_running) {
         int n = ring_pop(&g_ring, out_chunk, AUDIO_CHUNK_FRAMES);
         if (n < AUDIO_CHUNK_FRAMES) {

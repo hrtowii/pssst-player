@@ -42,8 +42,8 @@
           libmad = pkgs.stdenv.mkDerivation {
             pname = "psp-libmad";
             version = "unstable";
-	    dontStrip = true;
-	    # not needed but just in case bc it might brealk
+            dontStrip = true;
+            # not needed but just in case bc it might brealk
             src = libmad-src;
 
             nativeBuildInputs = [
@@ -56,16 +56,17 @@
 
             AR = "${pspdev.packages.${system}.psp-binutils}/bin/psp-ar";
             RANLIB = "${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib";
-
             configurePhase = ''
               	    	runHook preConfigure
                   	 	runHook postConfigure
             '';
 
             buildPhase = ''
-              	    	runHook preBuild
-                            	make -j$NIX_BUILD_CORES AR=$AR RANLIB=$RANLIB
-                            	runHook postBuild
+                            	    	runHook preBuild
+              			  export CFLAGS="-O3 -march=allegrex -mtune=allegrex -funroll-loops -fomit-frame-pointer -G0"
+
+                                          	make -j$NIX_BUILD_CORES AR=$AR RANLIB=$RANLIB
+                                          	runHook postBuild
             '';
 
             installPhase = ''
@@ -79,8 +80,8 @@
           libogg = pkgs.stdenv.mkDerivation {
             pname = "psp-libogg";
             version = "unstable";
-	    # NOTE TO SELF PLS KEEP THIS LINE IN
-	      dontStrip = true;
+            # NOTE TO SELF PLS KEEP THIS LINE IN
+            dontStrip = true;
 
             src = libogg-src;
 
@@ -92,14 +93,14 @@
             ];
 
             configurePhase = ''
-              runHook preConfigure
-	      local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
-    	      local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
-	      psp-cmake -B build -S . \
-      -DCMAKE_INSTALL_PREFIX=$out \
-      -DBUILD_TESTING=OFF \
-      -DCMAKE_AR="$psp_ar" \
-      -DCMAKE_RANLIB="$psp_ranlib" 
+                            runHook preConfigure
+              	      local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
+                  	      local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
+              	      psp-cmake -B build -S . \
+                    -DCMAKE_INSTALL_PREFIX=$out \
+                    -DBUILD_TESTING=OFF \
+                    -DCMAKE_AR="$psp_ar" \
+                    -DCMAKE_RANLIB="$psp_ranlib" 
 
             '';
 
@@ -119,13 +120,13 @@
           libflac = pkgs.stdenv.mkDerivation {
             pname = "psp-libflac";
             version = "unstable";
-	    # NOTE TO SELF KEEP THIS IN 
-	      dontStrip = true;
+            # NOTE TO SELF KEEP THIS IN
+            dontStrip = true;
 
             src = libflac-src;
-  patches = [
-    ./libflac-fix.patch
-  ];
+            patches = [
+              ./libflac-fix.patch
+            ];
             nativeBuildInputs = [
               pspdev.packages.${system}.psp-cmake
               pspdev.packages.${system}.pspsdk
@@ -138,24 +139,24 @@
             CFLAGS = "-Wno-error=incompatible-pointer-types -fpermissive";
             #        > /nix/var/nix/builds/nix-2305-1326438599/source/src/libFLAC/include/private/bitreader.h:81:77: note: expected 'FLAC__int32 *' {aka 'long int *'} but argument is of type 'int *
             configurePhase = ''
-                            runHook preConfigure
-			    local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
-    local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
+                                          runHook preConfigure
+              			    local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
+                  local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
 
-                            psp-cmake -B build -S . \
-      -DCMAKE_INSTALL_PREFIX=$out \
-      -DBUILD_PROGRAMS=OFF \
-      -DBUILD_EXAMPLES=OFF \
-      -DBUILD_TESTING=OFF \
-      -DINSTALL_MANPAGES=OFF \
-      -DCMAKE_PREFIX_PATH="${libogg}" \
-      -DOGG_INCLUDE_DIR="${libogg}/include" \
-      -DOGG_LIBRARY="${libogg}/lib/libogg.a" \
-      -DCMAKE_AR="$psp_ar" \
-      -DCMAKE_RANLIB="$psp_ranlib" \
-      -DENABLE_X86CPU=OFF \
-      -DENABLE_ARM_NEON=OFF
-      runHook postConfigure
+                                          psp-cmake -B build -S . \
+                    -DCMAKE_INSTALL_PREFIX=$out \
+                    -DBUILD_PROGRAMS=OFF \
+                    -DBUILD_EXAMPLES=OFF \
+                    -DBUILD_TESTING=OFF \
+                    -DINSTALL_MANPAGES=OFF \
+                    -DCMAKE_PREFIX_PATH="${libogg}" \
+                    -DOGG_INCLUDE_DIR="${libogg}/include" \
+                    -DOGG_LIBRARY="${libogg}/lib/libogg.a" \
+                    -DCMAKE_AR="$psp_ar" \
+                    -DCMAKE_RANLIB="$psp_ranlib" \
+                    -DENABLE_X86CPU=OFF \
+                    -DENABLE_ARM_NEON=OFF
+                    runHook postConfigure
             '';
 
             buildPhase = ''
@@ -174,8 +175,8 @@
         {
           packages = {
             libmad = libmad;
-	    libflac = libflac;
-	    libogg = libogg;
+            libflac = libflac;
+            libogg = libogg;
           };
           devShells.default = pkgs.mkShell {
             name = "psp-dev";
@@ -243,7 +244,7 @@
                                   build || return 1
 
                                   mkdir -p "$dest/PSP/GAME/$name"
-                                  cp -v build/*.pbp "$dest/PSP/GAME/$name/" 2>/dev/null \
+                                  cp -v build/*.PBP "$dest/PSP/GAME/$name/" 2>/dev/null \
                                     || { echo "no .pbp found in build/ — check create_pbp_file ran"; return 1; }
 
                                   echo "flashed to $dest/PSP/GAME/$name"

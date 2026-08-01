@@ -5,6 +5,9 @@ project(pssst-player C CXX ASM)
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.c")
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -O3 -march=allegrex -mtune=allegrex -fomit-frame-pointer -G0
+)
 set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "ON")
 
 # the shit i do for libraries

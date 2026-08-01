@@ -2,14 +2,18 @@
 #include <stdlib.h>
 #include <pspiofilemgr.h>
 #include <mad.h>
+#include "audio/audio.h"
 #include "audio/decoder.h"
 #include "util/logging.h"
+#define MP3_MAX_FRAME_SAMPLES 1152
 typedef struct {
     struct mad_stream stream;
     struct mad_frame  frame;
     struct mad_synth  synth;
     SceUID fd;
-    unsigned char in_buf[8192 + MAD_BUFFER_GUARD];
+    unsigned char in_buf[32768 + MAD_BUFFER_GUARD];
+    short leftover[MP3_MAX_FRAME_SAMPLES * AUDIO_CHANNELS];
+    int leftover_frames;
 } mp3_priv_t;
 
 static inline signed int scale(mad_fixed_t sample)
@@ -35,7 +39,7 @@ static bool mp3_fill(mp3_priv_t *p)
 
     int n = sceIoRead(p->fd,
                       p->in_buf + remaining,
-                      8192 - remaining);
+                      32768 - remaining);
 // LOG_DEBUG("MP3",
 //     "remaining=%u read=%d",
 //     (unsigned)remaining,
@@ -82,48 +86,75 @@ static int mp3_read_pcm(decoder_t *self, short *buf, int frames)
     if (!p || p->fd < 0)
         return 0;
 
+    int written = 0;
+
+    if (p->leftover_frames > 0) {
+        int take = p->leftover_frames;
+        if (take > frames)
+            take = frames;
+        memcpy(buf, p->leftover, take * AUDIO_CHANNELS * sizeof(short));
+        written += take;
+        p->leftover_frames -= take;
+        if (p->leftover_frames > 0)
+            memmove(p->leftover,
+                    p->leftover + take * AUDIO_CHANNELS,
+                    p->leftover_frames * AUDIO_CHANNELS * sizeof(short));
+        if (written >= frames)
+            return written;
+    }
+
     for (;;) {
+        int ret = mad_frame_decode(&p->frame, &p->stream);
 
-    int ret = mad_frame_decode(&p->frame, &p->stream);
+        if (ret == 0) {
+            mad_synth_frame(&p->synth, &p->frame);
 
+            int n = p->synth.pcm.length;
+            const mad_fixed_t *left  = p->synth.pcm.samples[0];
+            const mad_fixed_t *right =
+                (p->synth.pcm.channels == 2)
+                    ? p->synth.pcm.samples[1]
+                    : p->synth.pcm.samples[0];
 
-    if (ret == 0)
-        break;
+            int room = frames - written;
+            if (n > room) {
+                for (int i = 0; i < room; i++) {
+                    buf[(written + i) * 2]     = scale(left[i]);
+                    buf[(written + i) * 2 + 1] = scale(right[i]);
+                }
+                for (int i = room; i < n; i++) {
+                    p->leftover[(i - room) * 2]     = scale(left[i]);
+                    p->leftover[(i - room) * 2 + 1] = scale(right[i]);
+                }
+                p->leftover_frames = n - room;
+                return frames;
+            }
 
-    if (p->stream.error == MAD_ERROR_BUFLEN) {
+            for (int i = 0; i < n; i++) {
+                buf[(written + i) * 2]     = scale(left[i]);
+                buf[(written + i) * 2 + 1] = scale(right[i]);
+            }
+            written += n;
 
-        if (!mp3_fill(p)) {
-            return 0;
+            if (written >= frames)
+                return written;
+
+            continue;
         }
 
-        continue;
+        if (p->stream.error == MAD_ERROR_BUFLEN) {
+
+            if (!mp3_fill(p))
+                return written;
+
+            continue;
+        }
+
+        if (MAD_RECOVERABLE(p->stream.error))
+            continue;
+
+        return written;
     }
-
-
-    if (MAD_RECOVERABLE(p->stream.error))
-        continue;
-
-    return 0;
-    }
-
-    mad_synth_frame(&p->synth, &p->frame);
-
-    int n = p->synth.pcm.length;
-    if (n > frames)
-        n = frames;
-
-    const mad_fixed_t *left  = p->synth.pcm.samples[0];
-    const mad_fixed_t *right =
-        (p->synth.pcm.channels == 2)
-            ? p->synth.pcm.samples[1]
-            : p->synth.pcm.samples[0];
-
-    for (int i = 0; i < n; i++) {
-        buf[i * 2]     = scale(left[i]);
-        buf[i * 2 + 1] = scale(right[i]);
-    }
-
-    return n;
 }
 
 static void mp3_close(decoder_t *self) {

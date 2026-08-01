@@ -67,7 +67,7 @@ bool audio_init(void) {
     g_running = true;
 
     g_decode_thread_id = sceKernelCreateThread("decode_thread", decode_thread,
-                                                0x28, 0x10000, 0, NULL);
+                                                0x20, 0x10000, 0, NULL);
     if (g_decode_thread_id < 0) {
         LOG_ERR(TAG, "create decode_thread failed: %d", g_decode_thread_id);
         return false;

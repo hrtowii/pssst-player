@@ -59,14 +59,14 @@ PSPTexture create_texture_from_rgba(const unsigned char *rgba, int w, int h)
     return upload_rgba(rgba, w, h);
 }
 
-PSPTexture album_art_from_metadata(metadata_t *meta)
+PSPTexture album_art_from_data(const unsigned char *data, size_t len)
 {
-    if (!meta->art_data || meta->art_len == 0)
+    if (!data || len == 0)
         return (PSPTexture){0};
 
     int w, h, ch;
     unsigned char *decoded = stbi_load_from_memory(
-        meta->art_data, (int)meta->art_len, &w, &h, &ch, 4);
+        data, (int)len, &w, &h, &ch, 4);
     if (!decoded)
         return (PSPTexture){0};
 

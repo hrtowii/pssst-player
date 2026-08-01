@@ -1,10 +1,9 @@
 #include "audio/audio.h"
 #include "core/config.h"
 #include "core/file.h"
+#include "display/art_thread.h"
 #include "display/clay_renderer_ui.h"
 #include "display/font.h"
-#include "display/bg.h"
-#include "display/image.h"
 #include "display/ui.h"
 #include "player/metadata.h"
 #include "stdlib.h"
@@ -43,17 +42,14 @@ static void setup_callbacks(void) {
   if (thid >= 0)
     sceKernelStartThread(thid, 0, NULL);
 }
-static void load_test_image(PSPTexture *texture, const char *path) {
-  *texture = load_texture(path);
 
-  if (texture->pixels == NULL)
-    die("failed to load image");
-}
+static uint32_t art_generation = 0;
+
 int main(int argc, char *argv[]) {
   setup_callbacks();
 
   // pspDebugScreenInit();
-  log_init("ms0:/PSP/SAVEDATA/pssst_player/debug.log");
+  log_init("ms0:/pssstdebug.log");
   defer { log_shutdown(); }
   char app_dir[MAX_PATH];
   get_app_dir(argc, argv, app_dir, sizeof(app_dir));
@@ -93,9 +89,15 @@ int main(int argc, char *argv[]) {
   init_font_texture();
   init_clay();
 
+  if (!art_thread_init())
+    LOG_ERR(TAG, "art_thread_init failed");
+  defer { art_thread_shutdown(); }
+
   AppState app = {0};
   app.lib = &lib;
   app.config = &config;
+
+  ui_dirty.input = true;
 
   SceCtrlData pad, old = {0};
   while (1) {
@@ -111,6 +113,7 @@ int main(int argc, char *argv[]) {
         app.selected--;
         if (app.selected < app.scroll)
           app.scroll = app.selected;
+        ui_dirty.input = true;
       }
     }
     if (pressed & PSP_CTRL_DOWN) {
@@ -118,6 +121,7 @@ int main(int argc, char *argv[]) {
         app.selected++;
         if (app.selected >= app.scroll + VISIBLE_ROWS)
           app.scroll = app.selected - VISIBLE_ROWS + 1;
+        ui_dirty.input = true;
       }
     }
 
@@ -142,41 +146,74 @@ int main(int argc, char *argv[]) {
     }
     if (pressed & PSP_CTRL_SELECT) {
       app.playlist_collapsed = !app.playlist_collapsed;
+      ui_dirty.input = true;
     }
 
     int idx = audio_get_current_index();
     if (idx != app.playing_index) {
       app.playing_index = idx;
+      ui_dirty.track = true;
 
-      if (app.album_art.pixels) {
-        free(app.album_art.pixels);
-        app.album_art = (PSPTexture){0};
-      }
-      if (app.bg_texture_data.pixels) {
-        free(app.bg_texture_data.pixels);
-        app.bg_texture_data = (PSPTexture){0};
-      }
-      app.has_bg_texture = false;
       if (idx >= 0) {
         metadata_free(&app.meta);
-        metadata_loader_t *loader = metadata_loader_for(audio_get_current_path());
-        if (loader) loader->load(loader, audio_get_current_path(), &app.meta);
+        metadata_loader_t *loader =
+            metadata_loader_for(audio_get_current_path());
+        if (loader)
+          loader->load(loader, audio_get_current_path(), &app.meta);
         app.total_sec = app.meta.total_seconds;
-	// TODO move this to its own thread bc big image resizes hang the whole thing up
-        app.album_art = album_art_from_metadata(&app.meta);
-        app.bg_texture_data = build_background_texture(&app.album_art);
-        app.has_bg_texture = app.bg_texture_data.pixels != NULL;
+
+        art_submit(idx, ++art_generation, &app.meta);
+      } else {
+        if (app.album_art.pixels) {
+          free(app.album_art.pixels);
+          app.album_art = (PSPTexture){0};
+        }
+        if (app.bg_texture_data.pixels) {
+          free(app.bg_texture_data.pixels);
+          app.bg_texture_data = (PSPTexture){0};
+        }
+        app.has_bg_texture = false;
+        art_generation++;
       }
     }
 
-    app.current_sec = audio_get_current_second();
-    start_frame();
-    Clay_BeginLayout();
-    build_ui(&app);
-    Clay_RenderCommandArray cmds = Clay_EndLayout(0);
-    clay_renderer_render(cmds);
+    ArtResult art;
+    if (art_poll(&art)) {
+      if (art.generation == art_generation) {
+        if (app.album_art.pixels)
+          free(app.album_art.pixels);
+        if (app.bg_texture_data.pixels)
+          free(app.bg_texture_data.pixels);
+        app.album_art = art.album_art;
+        app.bg_texture_data = art.background;
+        app.has_bg_texture = app.bg_texture_data.pixels != NULL;
+        ui_dirty.track = true;
+      } else {
+        if (art.album_art.pixels)
+          free(art.album_art.pixels);
+        if (art.background.pixels)
+          free(art.background.pixels);
+      }
+    }
 
-    end_frame();
+    int sec = audio_get_current_second();
+    if (sec != app.current_sec) {
+      app.current_sec = sec;
+      ui_dirty.time = true;
+    }
+
+    if (ui_dirty.input || ui_dirty.time || ui_dirty.track) {
+      start_frame();
+      Clay_BeginLayout();
+      build_ui(&app);
+      Clay_RenderCommandArray cmds = Clay_EndLayout(0);
+      clay_renderer_render(cmds);
+
+      end_frame();
+      ui_dirty = (UiDirty){0};
+    } else {
+      sceKernelDelayThread(1000);
+    }
   }
   sceKernelExitGame();
   return 0;

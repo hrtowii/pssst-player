@@ -137,9 +137,8 @@ void start_frame(void) { sceGuStart(GU_DIRECT, display_list); }
 void end_frame(void) {
   sceGuFinish();
   sceGuSync(0, 0);
-
-  sceDisplayWaitVblankStart();
   sceGuSwapBuffers();
+  sceDisplayWaitVblankStart();
 }
 
 // ha ha we are scissoring ha ha yuri

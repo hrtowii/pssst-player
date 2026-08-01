@@ -12,6 +12,13 @@
 #define BG_H 14
 
 typedef struct {
+    volatile bool input;  // a button was pressed
+    volatile bool time;   // playback second advanced
+    volatile bool track;  // current track changed
+} UiDirty;
+extern volatile UiDirty ui_dirty;
+
+typedef struct {
     struct library *lib;
     struct config  *config;
     int             selected;
