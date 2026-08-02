@@ -2,6 +2,7 @@
 #include "audio/audio_internal.h"
 #include "audio/decoder.h"
 #include "player/playlist.h"
+#include "player/metadata.h"
 #include "util/logging.h"
 #include "util/ringbuf.h"
 #include <pspiofilemgr.h>
@@ -55,6 +56,17 @@ static bool decoder_open(const char *path) {
   }
 
   g_decoder_open = true;
+// this is kinda scuffed bc now metadata is used by both ui and decode...
+  metadata_t meta;
+  metadata_loader_t *loader = metadata_loader_for(path);
+  int rate = 0;
+  if (loader && loader->load(loader, path, &meta)) {
+    rate = meta.sample_rate;
+    metadata_free(&meta);
+  }
+  g_pending_rate = rate;
+  ring_reset(&g_ring);
+
   return true;
 }
 

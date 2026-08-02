@@ -19,6 +19,7 @@ typedef struct {
     unsigned char *art_data;
     size_t art_len;
     int art_type;
+    int sample_rate;
 } metadata_t;
 
 typedef struct metadata_loader metadata_loader_t;

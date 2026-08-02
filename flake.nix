@@ -210,6 +210,11 @@
               		        cat > "$PWD/.clangd" <<EOF
               CompileFlags:
                 CompilationDatabase: build
+                Remove:
+                  - "-march=.*"
+                  - "-mtune=.*"
+                  - "-G[0-9]*"
+                  - "-fomit-frame-pointer"
                 Add:
                   - -isystem''${libmad}/include
                   - -isystem''${libmad}/psp/sdk/include
@@ -223,6 +228,7 @@
                   - -std=gnu17
               EOF
                                   cmake --build build
+                                  sed -i "s|''${PSPGCC}|clang|g; s|-march=[a-z0-9]* ||g; s|-mtune=[a-z0-9]* ||g; s|-G0 ||g" build/compile_commands.json
                                 }
 
                                 elf() {

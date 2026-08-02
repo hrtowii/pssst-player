@@ -1,6 +1,5 @@
 #include "audio/audio.h"
 #include "audio/decoder.h"
-#include "audio/resampler.h"
 #include "util/logging.h"
 #include <FLAC/stream_decoder.h>
 #include <pspiofilemgr.h>
@@ -9,8 +8,7 @@
 
 #define TAG "FLAC"
 
-#define FLAC_RESAMPLE_BUFFER_FRAMES (FLAC__MAX_BLOCK_SIZE * 2)
-#define FLAC_PCM_BUFFER_FRAMES (FLAC__MAX_BLOCK_SIZE + 1)
+#define FLAC_PCM_BUFFER_FRAMES (FLAC__MAX_BLOCK_SIZE * 2)
 
 typedef struct {
   FLAC__StreamDecoder *decoder;
@@ -20,9 +18,7 @@ typedef struct {
   int pcm_frames;
   int pcm_pos;
 
-  short resample_buf[FLAC_RESAMPLE_BUFFER_FRAMES * 2];
 
-  resampler_t resampler;
   int sample_rate;
   bool eos;
 } flac_priv_t;
@@ -202,19 +198,7 @@ static bool flac_open(decoder_t *self, const char *path) {
     free(p);
     return false;
   }
-
-  if (resampler_init(&p->resampler, p->sample_rate, AUDIO_SAMPLE_RATE) < 0) {
-    LOG_ERR(TAG, "resample init FAIL");
-    FLAC__stream_decoder_finish(p->decoder);
-
-    FLAC__stream_decoder_delete(p->decoder);
-
-    sceIoClose(p->fd);
-    free(p);
-
-    return false;
-  }
-
+  
   self->priv = p;
   return true;
 }
@@ -243,9 +227,8 @@ static int flac_read_pcm(decoder_t *self, short *buf, int frames) {
       }
 
       if (FLAC__stream_decoder_get_state(p->decoder) ==
-          FLAC__STREAM_DECODER_END_OF_STREAM) {
+          FLAC__STREAM_DECODER_END_OF_STREAM)
         p->eos = true;
-      }
 
       /*
        * process_single() may process metadata or otherwise produce
@@ -256,50 +239,15 @@ static int flac_read_pcm(decoder_t *self, short *buf, int frames) {
     }
 
     int available = p->pcm_frames - p->pcm_pos;
-    int output_space = frames - written;
+    int take = available;
+    if (take > frames - written)
+      take = frames - written;
 
-    int output_cap = output_space;
-    if (output_cap > FLAC_RESAMPLE_BUFFER_FRAMES)
-      output_cap = FLAC_RESAMPLE_BUFFER_FRAMES;
+    memcpy(buf + written * 2, p->pcm_buf + p->pcm_pos * 2,
+           take * 2 * sizeof(short));
 
-    int input_consumed = 0;
-
-    int produced =
-        resampler_process(&p->resampler, p->pcm_buf + p->pcm_pos * 2, available,
-                          p->resample_buf, output_cap, &input_consumed);
-
-    if (produced > 0) {
-      memcpy(buf + written * 2, p->resample_buf, produced * 2 * sizeof(short));
-
-      written += produced;
-    }
-
-    p->pcm_pos += input_consumed;
-
-    /*
-     * The resampler needs more input. Do not return zero to the
-     * decode thread; decode another FLAC block and let write_cb()
-     * preserve and append the remaining input.
-     */
-    if (produced == 0 && input_consumed == 0) {
-      if (p->eos)
-        break;
-
-      if (!FLAC__stream_decoder_process_single(p->decoder)) {
-        FLAC__StreamDecoderState state =
-            FLAC__stream_decoder_get_state(p->decoder);
-
-        if (state == FLAC__STREAM_DECODER_END_OF_STREAM)
-          p->eos = true;
-
-        break;
-      }
-
-      if (FLAC__stream_decoder_get_state(p->decoder) ==
-          FLAC__STREAM_DECODER_END_OF_STREAM) {
-        p->eos = true;
-      }
-    }
+    written += take;
+    p->pcm_pos += take;
   }
 
   return written;

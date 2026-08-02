@@ -25,6 +25,24 @@ static uint32_t fnv1a32(const void *data, size_t length) {
     return hash;
 }
 
+static int is_supported_media(const char* path)
+{
+	const char* ext = strrchr(path, '.');
+
+	if (!ext || ext == path || ext[1] == '\0')
+		return 0;
+
+	ext++;
+
+	if (strcasecmp(ext, "mp3") == 0)
+		return 1;
+
+	if (strcasecmp(ext, "flac") == 0)
+		return 1;
+
+	return 0;
+}
+
 static int library_push(struct library* l, const char* root, const char* rel)
 {
 	char full[MAX_PATH];
@@ -116,6 +134,9 @@ static int scan_dir(struct library* l, const char* root, const char* rel)
 		}
 
 		if (S_ISREG(st.st_mode)) {
+			if (!is_supported_media(rel2))
+				continue;
+
 			if (library_push(l, root, rel2) < 0)
 				goto fail;
 			continue;

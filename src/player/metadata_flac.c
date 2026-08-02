@@ -37,6 +37,7 @@ static bool flac_load(metadata_loader_t *self, const char *path,
 
     if (block->type == FLAC__METADATA_TYPE_STREAMINFO) {
       unsigned sr = block->data.stream_info.sample_rate;
+      out->sample_rate = sr;
       if (sr > 0 && block->data.stream_info.total_samples > 0) {
         out->total_seconds = (int)(block->data.stream_info.total_samples / sr);
       }

@@ -12,7 +12,7 @@ static const int sr_table[4][4] = {
     {44100, 48000, 32000, 0},   // MPEG1    (version=3)
 };
 
-static int parse_mp3_duration(const char *path) {
+static int parse_mp3_duration(const char *path, metadata_t *out) {
     int fp = sceIoOpen(path, PSP_O_RDONLY, 0777);
     if (fp < 0) return 0;
 
@@ -50,6 +50,7 @@ static int parse_mp3_duration(const char *path) {
 
     int samplerate = sr_table[version][sr_idx];
     if (samplerate <= 0) { sceIoClose(fp); return 0; }
+    if (out) out->sample_rate = samplerate;
 
     int is_mpeg1          = (version == 3);
     int is_single_channel = (chan_mode == 3);
@@ -135,7 +136,7 @@ static bool mp3_load(metadata_loader_t *self, const char *path, metadata_t *out)
     out->art_data = extract_album_art(path, &tag, &out->art_len);
     out->art_type = tag.ID3EncapsulatedPictureType;
 
-    out->total_seconds = parse_mp3_duration(path);
+    out->total_seconds = parse_mp3_duration(path, out);
     return true;
 }
 
