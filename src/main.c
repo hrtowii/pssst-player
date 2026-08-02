@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
       end_frame();
       ui_dirty = (UiDirty){0};
     } else {
-      sceKernelDelayThread(1000);
+      sceKernelDelayThread(5000);
     }
   }
   sceKernelExitGame();

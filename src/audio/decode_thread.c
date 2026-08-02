@@ -8,6 +8,7 @@
 #include <pspiofilemgr.h>
 #include <psprtc.h>
 #include <string.h>
+#include <psppower.h>
 
 #define TAG "decode_thread"
 
@@ -30,11 +31,13 @@ static const decoder_t *decoder_from_path(const char *path) {
 
   ext++;
 
-  if (strcasecmp(ext, "mp3") == 0)
+  if (strcasecmp(ext, "mp3") == 0) {
     return &decoder_mp3;
+  }
 
-  if (strcasecmp(ext, "flac") == 0)
+  if (strcasecmp(ext, "flac") == 0) {
     return &decoder_flac;
+  }
 
   LOG_ERR(TAG, "unsupported extension: .%s", ext);
   return NULL;
@@ -116,10 +119,10 @@ int decode_thread(SceSize args, void *argp) {
     handle_pending_switch();
 
     if (g_state != AUDIO_STATE_PLAYING || !g_decoder_open) {
-      sceKernelDelayThread(10 * 100);
+      sceKernelDelayThread(1000);
       continue;
     }
-    if (ring_frames_available(&g_ring) >= 32768) {
+    if (ring_frames_available(&g_ring) >= 49152) {
       sceKernelDelayThread(5000);
       continue;
     }
@@ -134,7 +137,6 @@ int decode_thread(SceSize args, void *argp) {
     }
 
     ring_push(&g_ring, pcm_chunk, n);
-    sceKernelDelayThread(1000);
   }
 
   decoder_close();

@@ -136,7 +136,7 @@
             ];
 
             buildInputs = [ libogg ];
-            CFLAGS = "-Wno-error=incompatible-pointer-types -fpermissive";
+	    CFLAGS = "-O3 -march=allegrex -mtune=allegrex -funroll-loops -fomit-frame-pointer -G0 -Wno-error=incompatible-pointer-types -fpermissive";
             #        > /nix/var/nix/builds/nix-2305-1326438599/source/src/libFLAC/include/private/bitreader.h:81:77: note: expected 'FLAC__int32 *' {aka 'long int *'} but argument is of type 'int *
             configurePhase = ''
                                           runHook preConfigure

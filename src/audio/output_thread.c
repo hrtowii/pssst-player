@@ -20,6 +20,13 @@ int output_thread(SceSize args, void *argp) {
         }
         int n = ring_pop(&g_ring, out_chunk, AUDIO_CHUNK_FRAMES);
         if (n < AUDIO_CHUNK_FRAMES) {
+		  LOG_DEBUG(
+      "output",
+      "UNDERRUN: got %d/%d frames, ring now %d",
+      n,
+      AUDIO_CHUNK_FRAMES,
+      ring_frames_available(&g_ring)
+  );
             memset(out_chunk + n * AUDIO_CHANNELS, 0,
                    (AUDIO_CHUNK_FRAMES - n) * AUDIO_CHANNELS * sizeof(short));
         }

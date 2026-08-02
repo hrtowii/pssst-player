@@ -74,6 +74,7 @@ target_link_libraries(${PROJECT_NAME}
     pspdisplay
     pspge
     pspdebug
+    # psppower
     m
     ${MAD_LIBRARY}
     ${FLAC_LIBRARY}
