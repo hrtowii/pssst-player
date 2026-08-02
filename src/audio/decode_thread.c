@@ -73,6 +73,18 @@ static bool decoder_open(const char *path) {
   return true;
 }
 
+static void open_with_skip(const char *first_path) {
+  const char *try_path = first_path;
+  while (try_path) {
+    if (decoder_open(try_path)) {
+      g_state = AUDIO_STATE_PLAYING;
+      return;
+    }
+    try_path = playlist_advance(&g_pl);
+  }
+  g_state = AUDIO_STATE_STOPPED;
+}
+
 static void handle_pending_switch(void) {
   if (g_switch_kind == SWITCH_NONE)
     return;
@@ -101,11 +113,7 @@ static void handle_pending_switch(void) {
   }
 
   // kind == SWITCH_TO_PATH
-  if (!decoder_open(path)) {
-    g_state = AUDIO_STATE_STOPPED;
-  } else {
-    g_state = AUDIO_STATE_PLAYING;
-  }
+  open_with_skip(path);
 }
 
 int decode_thread(SceSize args, void *argp) {
@@ -130,9 +138,7 @@ int decode_thread(SceSize args, void *argp) {
     if (n <= 0) {
       const char *next = playlist_advance(&g_pl);
       decoder_close();
-      if (!next || !decoder_open(next)) {
-        g_state = AUDIO_STATE_STOPPED;
-      }
+      open_with_skip(next);
       continue;
     }
 
