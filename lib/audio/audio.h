@@ -6,7 +6,7 @@
 
 #define AUDIO_MAX_TRACKS   512
 #define AUDIO_CHANNELS     2
-#define AUDIO_CHUNK_FRAMES 2048
+#define AUDIO_CHUNK_FRAMES 4096
 #define AUDIO_RINGBUF_FRAMES 65536
 
 typedef enum {
