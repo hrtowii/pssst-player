@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
+#define ROOT_DIR UINT32_MAX
+
 // copied from parados for recursive scanning
 // https://github.com/uint23/parados/blob/master/server/include/scan.h
 struct item {

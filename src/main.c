@@ -96,6 +96,8 @@ int main(int argc, char *argv[]) {
   AppState app = {0};
   app.lib = &lib;
   app.config = &config;
+  app.current_dir = 0;
+  app.screen = SCREEN_BROWSE;
 
   ui_dirty.input = true;
 
@@ -108,27 +110,74 @@ int main(int argc, char *argv[]) {
     if (pressed & PSP_CTRL_HOME)
       break;
 
-    if (pressed & PSP_CTRL_UP) {
-      if (app.selected > 0) {
-        app.selected--;
-        if (app.selected < app.scroll)
-          app.scroll = app.selected;
-        ui_dirty.input = true;
+    if (app.screen == SCREEN_BROWSE) {
+      uint32_t row_count = dir_row_count(app.lib, app.current_dir);
+
+      if (pressed & PSP_CTRL_UP) {
+        if (app.selected > 0) {
+          app.selected--;
+          if (app.selected < app.scroll)
+            app.scroll = app.selected;
+          ui_dirty.input = true;
+        }
       }
-    }
-    if (pressed & PSP_CTRL_DOWN) {
-      if (app.selected < (int)lib.len - 1) {
-        app.selected++;
-        if (app.selected >= app.scroll + VISIBLE_ROWS)
-          app.scroll = app.selected - VISIBLE_ROWS + 1;
-        ui_dirty.input = true;
+      if (pressed & PSP_CTRL_DOWN) {
+        if (app.selected < (int)row_count - 1) {
+          app.selected++;
+          if (app.selected >= app.scroll + VISIBLE_ROWS)
+            app.scroll = app.selected - VISIBLE_ROWS + 1;
+          ui_dirty.input = true;
+        }
+      }
+
+      if (pressed & PSP_CTRL_RIGHT) {
+        uint32_t idx;
+        if (row_count > 0 &&
+            dir_row_resolve(app.lib, app.current_dir, app.selected, &idx)) {
+          app.current_dir = idx;
+          app.selected = 0;
+          app.scroll = 0;
+          ui_dirty.input = true;
+        }
+      }
+
+      if (pressed & PSP_CTRL_LEFT) {
+        uint32_t parent = app.lib->dirs[app.current_dir].parent;
+        if (parent != ROOT_DIR) {
+          uint32_t prev_dir = app.current_dir;
+          app.current_dir = parent;
+          app.selected = 0;
+          app.scroll = 0;
+          struct dir *p = &app.lib->dirs[parent];
+          for (uint32_t i = 0; i < p->child_dir_len; i++) {
+            if (p->child_dirs[i] == prev_dir) {
+              app.selected = (int)i;
+              if (app.selected >= VISIBLE_ROWS)
+                app.scroll = app.selected - VISIBLE_ROWS + 1;
+              break;
+            }
+          }
+          ui_dirty.input = true;
+        }
+      }
+
+      if (pressed & PSP_CTRL_CROSS) {
+        uint32_t idx;
+        if (row_count > 0 &&
+            dir_row_resolve(app.lib, app.current_dir, app.selected, &idx)) {
+          app.current_dir = idx;
+          app.selected = 0;
+          app.scroll = 0;
+          ui_dirty.input = true;
+        } else if (row_count > 0) {
+          LOG_DEBUG(TAG, "playing song %u", idx);
+          audio_play_index((int)idx);
+          app.screen = SCREEN_NOWPLAYING;
+          ui_dirty.input = true;
+        }
       }
     }
 
-    if (pressed & PSP_CTRL_CROSS) {
-      LOG_DEBUG(TAG, "playing song %d", app.selected);
-      audio_play_index(app.selected);
-    }
     if (pressed & PSP_CTRL_CIRCLE) {
       if (audio_get_state() == AUDIO_STATE_PLAYING)
         audio_pause();
@@ -144,16 +193,38 @@ int main(int argc, char *argv[]) {
     if (pressed & PSP_CTRL_LTRIGGER) {
       audio_prev();
     }
-    if (pressed & PSP_CTRL_SELECT) {
-      app.playlist_collapsed = !app.playlist_collapsed;
+    if (pressed & PSP_CTRL_TRIANGLE) {
+      audio_set_shuffle(!audio_get_shuffle());
       ui_dirty.input = true;
+    }
+    if (pressed & PSP_CTRL_START) {
+      repeat_mode_t next;
+      switch (audio_get_repeat()) {
+      case REPEAT_OFF:
+        next = REPEAT_ALL;
+        break;
+      case REPEAT_ALL:
+        next = REPEAT_ONE;
+        break;
+      default:
+        next = REPEAT_OFF;
+        break;
+      }
+      audio_set_repeat(next);
+      ui_dirty.input = true;
+    }
+    if (pressed & PSP_CTRL_SELECT) {
+      if (app.playing_index >= 0) {
+        app.screen =
+            (app.screen == SCREEN_BROWSE) ? SCREEN_NOWPLAYING : SCREEN_BROWSE;
+        ui_dirty.input = true;
+      }
     }
 
     int idx = audio_get_current_index();
     if (idx != app.playing_index) {
       app.playing_index = idx;
       ui_dirty.track = true;
-
       if (idx >= 0) {
         metadata_free(&app.meta);
         metadata_loader_t *loader =
@@ -161,7 +232,6 @@ int main(int argc, char *argv[]) {
         if (loader)
           loader->load(loader, audio_get_current_path(), &app.meta);
         app.total_sec = app.meta.total_seconds;
-
         art_submit(idx, ++art_generation, &app.meta);
       } else {
         if (app.album_art.pixels) {
@@ -174,6 +244,8 @@ int main(int argc, char *argv[]) {
         }
         app.has_bg_texture = false;
         art_generation++;
+        app.screen = SCREEN_BROWSE;
+        ui_dirty.input = true;
       }
     }
 
@@ -208,7 +280,6 @@ int main(int argc, char *argv[]) {
       build_ui(&app);
       Clay_RenderCommandArray cmds = Clay_EndLayout(0);
       clay_renderer_render(cmds);
-
       end_frame();
       ui_dirty = (UiDirty){0};
     } else {

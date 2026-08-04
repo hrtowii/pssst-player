@@ -226,7 +226,8 @@ void audio_prev(void) {
 
   request_switch_to(path);
 }
-
+repeat_mode_t audio_get_repeat(void) { return g_pl.repeat; }
+bool audio_get_shuffle(void) { return g_pl.shuffle; }
 void audio_set_repeat(repeat_mode_t mode) { g_pl.repeat = mode; }
 void audio_set_shuffle(bool on) { g_pl.shuffle = on; }
 

@@ -4,9 +4,8 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-
+#include <stdint.h>
 #define TAG "file_scanner"
-#define ROOT_DIR UINT32_MAX
 
 static uint32_t fnv1a32(const void *data, size_t length) {
   uint32_t hash = 0x811c9dc5;

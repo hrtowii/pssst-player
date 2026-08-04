@@ -12,14 +12,16 @@
 
 
 ## controls:
-* X to play. O to pause/play. square to stop.
+* X to play. O to pause/play. triangle to shuffle. square to stop.
 * L/R bumpers to skip/prev song
-* SELECT to toggle sidebar in playing view
+* SELECT to toggle file explorer in playing view
+* START to toggle repeat modes
 * HOME button to exit
 
 ## to implement:
 * wav support
 * i wanna get a proper tree view or at least file explorer view, so for that i cant just recurse i have to keep track of each file's parent dir if i traversed it
+^^done
 
 ## wishlist:
 * might be doable:

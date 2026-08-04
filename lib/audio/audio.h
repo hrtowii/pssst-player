@@ -35,6 +35,8 @@ void audio_stop(void);
 void audio_next(void);
 void audio_prev(void);
 
+repeat_mode_t audio_get_repeat(void);
+bool audio_get_shuffle(void);
 void audio_set_repeat(repeat_mode_t mode);
 void audio_set_shuffle(bool on);
 
