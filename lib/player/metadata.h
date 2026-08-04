@@ -31,6 +31,7 @@ struct metadata_loader {
 
 extern metadata_loader_t metadata_mp3;
 extern metadata_loader_t metadata_flac;
+extern metadata_loader_t metadata_opus;
 
 metadata_loader_t *metadata_loader_for(const char *path);
 void metadata_free(metadata_t *meta);

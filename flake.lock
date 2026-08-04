@@ -85,6 +85,40 @@
         "type": "github"
       }
     },
+    "libopus-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1768335394,
+        "narHash": "sha256-I1f+J//ZJBMj88+PQhsYBjz3fm4Ll3ckZD+fYa6/3Y0=",
+        "owner": "xiph",
+        "repo": "opus",
+        "rev": "22244de5a79bd1d6d623c32e72bf1954b56235be",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiph",
+        "repo": "opus",
+        "rev": "22244de5a79bd1d6d623c32e72bf1954b56235be",
+        "type": "github"
+      }
+    },
+    "libopusfile-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1774735143,
+        "narHash": "sha256-z0AdE4zgDYkHlMmEovdeMOFXTr8hGlFAJ5vfPXGPDzk=",
+        "owner": "xiph",
+        "repo": "opusfile",
+        "rev": "6dfd29e7adb87f2e193575fc3fa88cbf1a0b27df",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiph",
+        "repo": "opusfile",
+        "rev": "6dfd29e7adb87f2e193575fc3fa88cbf1a0b27df",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1784796856,
@@ -157,6 +191,8 @@
         "libflac-src": "libflac-src",
         "libmad-src": "libmad-src",
         "libogg-src": "libogg-src",
+        "libopus-src": "libopus-src",
+        "libopusfile-src": "libopusfile-src",
         "nixpkgs": "nixpkgs",
         "pspdev": "pspdev"
       }

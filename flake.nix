@@ -16,6 +16,14 @@
       url = "github:xiph/flac/e94ff9f68b8e7dbd3e9f8b1ac18a8eca1914f181";
       flake = false;
     };
+    libopus-src = {
+      url = "github:xiph/opus/22244de5a79bd1d6d623c32e72bf1954b56235be";
+      flake = false;
+    };
+    libopusfile-src = {
+      url = "github:xiph/opusfile/6dfd29e7adb87f2e193575fc3fa88cbf1a0b27df";
+      flake = false;
+    };
   };
 
   outputs =
@@ -27,6 +35,8 @@
       libmad-src,
       libogg-src,
       libflac-src,
+      libopus-src,
+      libopusfile-src,
     }:
     flake-utils.lib.eachSystem
       [
@@ -136,7 +146,7 @@
             ];
 
             buildInputs = [ libogg ];
-	    CFLAGS = "-O3 -march=allegrex -mtune=allegrex -funroll-loops -fomit-frame-pointer -G0 -Wno-error=incompatible-pointer-types -fpermissive";
+            CFLAGS = "-O3 -march=allegrex -mtune=allegrex -funroll-loops -fomit-frame-pointer -G0 -Wno-error=incompatible-pointer-types -fpermissive";
             #        > /nix/var/nix/builds/nix-2305-1326438599/source/src/libFLAC/include/private/bitreader.h:81:77: note: expected 'FLAC__int32 *' {aka 'long int *'} but argument is of type 'int *
             configurePhase = ''
                                           runHook preConfigure
@@ -171,12 +181,119 @@
               runHook postInstall
             '';
           };
+
+          libopus = pkgs.stdenv.mkDerivation {
+            pname = "psp-libopus";
+            version = "1.6.1";
+            # NOTE TO SELF KEEP THIS IN
+            dontStrip = true;
+
+            src = libopus-src;
+
+            nativeBuildInputs = [
+              pspdev.packages.${system}.psp-cmake
+              pspdev.packages.${system}.pspsdk
+              pspdev.packages.${system}.psp-gcc
+              pspdev.packages.${system}.psp-binutils
+              pspdev.packages.${system}.psp-pkg-config
+            ];
+
+            CFLAGS = "-O3 -march=allegrex -mtune=allegrex -funroll-loops -fomit-frame-pointer -G0 -std=gnu99";
+
+            configurePhase = ''
+              runHook preConfigure
+              local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
+              local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
+
+              psp-cmake -B build -S . \
+                -DCMAKE_INSTALL_PREFIX=$out \
+                -DOPUS_BUILD_PROGRAMS=OFF \
+                -DOPUS_BUILD_TESTING=OFF \
+                -DOPUS_BUILD_SHARED_LIBRARY=OFF \
+                -DOPUS_FIXED_POINT=ON \
+                -DOPUS_DISABLE_INTRINSICS=ON \
+                -DOPUS_HARDENING=OFF \
+                -DOPUS_STACK_PROTECTOR=OFF \
+                -DCMAKE_AR="$psp_ar" \
+                -DCMAKE_RANLIB="$psp_ranlib"
+              runHook postConfigure
+            '';
+
+            buildPhase = ''
+              runHook preBuild
+              psp-cmake --build build --verbose -j$NIX_BUILD_CORES
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              psp-cmake --install build
+              runHook postInstall
+            '';
+          };
+
+          libopusfile = pkgs.stdenv.mkDerivation {
+            pname = "psp-libopusfile";
+            version = "unstable";
+            # NOTE TO SELF KEEP THIS IN
+            dontStrip = true;
+
+            src = libopusfile-src;
+
+            nativeBuildInputs = [
+              pspdev.packages.${system}.psp-cmake
+              pspdev.packages.${system}.pspsdk
+              pspdev.packages.${system}.psp-gcc
+              pspdev.packages.${system}.psp-binutils
+              pspdev.packages.${system}.psp-pkg-config
+            ];
+
+            buildInputs = [
+              libogg
+              libopus
+            ];
+
+            CFLAGS = "-O3 -march=allegrex -mtune=allegrex -funroll-loops -fomit-frame-pointer -G0 -std=gnu99";
+
+            configurePhase = ''
+              runHook preConfigure
+              local psp_ar="${pspdev.packages.${system}.psp-binutils}/bin/psp-ar"
+              local psp_ranlib="${pspdev.packages.${system}.psp-binutils}/bin/psp-ranlib"
+
+              psp-cmake -B build -S . \
+                -DCMAKE_INSTALL_PREFIX=$out \
+                -DCMAKE_PREFIX_PATH="${libogg};${libopus}" \
+                -DOgg_DIR="${libogg}/lib/cmake/Ogg" \
+                -DOpus_DIR="${libopus}/lib/cmake/Opus" \
+                -DOP_DISABLE_HTTP=ON \
+                -DOP_FIXED_POINT=ON \
+                -DOP_DISABLE_EXAMPLES=ON \
+                -DOP_DISABLE_DOCS=ON \
+                -DCMAKE_AR="$psp_ar" \
+                -DCMAKE_RANLIB="$psp_ranlib"
+              runHook postConfigure
+            '';
+
+            buildPhase = ''
+              runHook preBuild
+              psp-cmake --build build --verbose -j$NIX_BUILD_CORES
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              psp-cmake --install build
+              runHook postInstall
+            '';
+          };
         in
         {
           packages = {
             libmad = libmad;
             libflac = libflac;
             libogg = libogg;
+            libopus = libopus;
+            libopusfile = libopusfile;
           };
           devShells.default = pkgs.mkShell {
             name = "psp-dev";
@@ -192,6 +309,8 @@
               libmad
               libogg
               libflac
+              libopus
+              libopusfile
             ];
             shellHook = ''
                                 echo "PSP toolchain ready (${system})"
@@ -204,8 +323,8 @@
                                   rm -rf build
                                   psp-cmake -B build -S . \
                                 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-                                -DCMAKE_LIBRARY_PATH="${libmad}/lib;${libogg}/lib;${libflac}/lib" \
-                                -DCMAKE_INCLUDE_PATH="${libmad}/include;${libogg}/include;${libflac}/include" || return 1
+                                -DCMAKE_LIBRARY_PATH="${libmad}/lib;${libogg}/lib;${libflac}/lib;${libopus}/lib;${libopusfile}/lib" \
+                                -DCMAKE_INCLUDE_PATH="${libmad}/include;${libogg}/include;${libflac}/include;${libopus}/include;${libopusfile}/include" || return 1
               		  ln -sf build/compile_commands.json compile_commands.json
               		        cat > "$PWD/.clangd" <<EOF
               CompileFlags:
@@ -220,6 +339,9 @@
                   - -isystem''${libmad}/psp/sdk/include
                   - -isystem''${libogg}/include
                   - -isystem''${libflac}/include
+                  - -isystem''${libopus}/include
+                  - -isystem''${libopus}/include/opus
+                  - -isystem''${libopusfile}/include
                   - -isystem''${PSPGCC%/bin/psp-gcc}/psp/include
                   - -isystem''${PSP_GCC_LIBDIR}
                   - -isystem''${PSP_SYSROOT}/include
@@ -259,10 +381,14 @@
                                 export -f build elf flash
               		  export LIBMAD_LIBDIR="${libmad}/lib"
               		  export LIBMAD_INCDIR="${libmad}/include"
-              		  export OGG_LIBDIR="${libogg}/lib"
-                            export OGG_INCDIR="${libogg}/include"
-                            export FLAC_LIBDIR="${libflac}/lib"
-                            export FLAC_INCDIR="${libflac}/include"
+              		  export LIBOGG_LIBDIR="${libogg}/lib"
+                            export LIBOGG_INCDIR="${libogg}/include"
+                            export LIBFLAC_LIBDIR="${libflac}/lib"
+                            export LIBFLAC_INCDIR="${libflac}/include"
+                            export LIBOPUS_LIBDIR="${libopus}/lib"
+                            export LIBOPUS_INCDIR="${libopus}/include"
+                            export LIBOPUSFILE_LIBDIR="${libopusfile}/lib"
+                            export LIBOPUSFILE_INCDIR="${libopusfile}/include"
             '';
           };
         }

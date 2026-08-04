@@ -39,6 +39,10 @@ static int is_supported_media(const char* path)
 
 	if (strcasecmp(ext, "flac") == 0)
 		return 1;
+	// TODO find a way to register file formats more easily bc rn i have to touch like 6 files
+	if (strcasecmp(ext, "opus") == 0)
+		return 1;
+
 
 	return 0;
 }

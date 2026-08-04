@@ -59,11 +59,46 @@ find_path(FLAC_INCLUDE_DIR FLAC/stream_decoder.h
     REQUIRED
 )
 
+find_library(OPUS_LIBRARY opus
+    HINTS
+        $ENV{LIBOPUS_LIBDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
+
+find_path(OPUS_INCLUDE_DIR opus/opus.h
+    HINTS
+        $ENV{LIBOPUS_INCDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
+
+find_library(OPUSFILE_LIBRARY opusfile
+    HINTS
+        $ENV{LIBOPUSFILE_LIBDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
+
+find_path(OPUSFILE_INCLUDE_DIR opus/opusfile.h
+    HINTS
+        $ENV{LIBOPUSFILE_INCDIR}
+        ${CMAKE_SOURCE_DIR}/lib
+    NO_CMAKE_FIND_ROOT_PATH
+    REQUIRED
+)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/lib
     ${MAD_INCLUDE_DIR}
     ${OGG_INCLUDE_DIR}
     ${FLAC_INCLUDE_DIR}
+    ${OPUS_INCLUDE_DIR}
+    ${OPUS_INCLUDE_DIR}/opus
+    ${OPUSFILE_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -78,6 +113,8 @@ target_link_libraries(${PROJECT_NAME}
     m
     ${MAD_LIBRARY}
     ${FLAC_LIBRARY}
+    ${OPUS_LIBRARY}
+    ${OPUSFILE_LIBRARY}
     ${OGG_LIBRARY}
     # me-core
 )

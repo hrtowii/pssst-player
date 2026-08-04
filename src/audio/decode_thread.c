@@ -39,6 +39,10 @@ static const decoder_t *decoder_from_path(const char *path) {
     return &decoder_flac;
   }
 
+  if (strcasecmp(ext, "opus") == 0) {
+	  return &decoder_opus;
+  }
+
   LOG_ERR(TAG, "unsupported extension: .%s", ext);
   return NULL;
 }

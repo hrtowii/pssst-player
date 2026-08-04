@@ -17,6 +17,9 @@ metadata_loader_t *metadata_loader_for(const char *path)
     if (strcasecmp(ext, "flac") == 0)
         return &metadata_flac;
 
+    if (strcasecmp(ext, "opus") == 0) 
+	return &metadata_opus;
+
     return NULL;
 }
 
