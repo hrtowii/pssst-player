@@ -7,8 +7,8 @@
 * Opus support (VBR obviously), use opustools to convert
 * cool (imo!) UI
 
-<img width="3520" height="1980" alt="IMG_4123" src="https://github.com/user-attachments/assets/97e5f675-fbd8-4602-9109-9458a6dc4618" />
-<img width="3520" height="1980" alt="IMG_4119" src="https://github.com/user-attachments/assets/48c2d67c-ba3b-40b0-ac63-d56db412090b" />
+<img width="1604" height="1041" alt="Screenshot 2026-08-05 at 4 46 37 AM" src="https://github.com/user-attachments/assets/c298857a-5aef-47ec-8691-1476fdab2e39" />
+<img width="1560" height="997" alt="Screenshot 2026-08-05 at 4 43 52 AM" src="https://github.com/user-attachments/assets/e1ac7b88-0a59-4b2d-b2ee-af954c95afcb" />
 
 
 ## controls:
