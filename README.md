@@ -4,6 +4,7 @@
 ## features 
 * MP3 playing at 320kbps/48khz
 * FLAC playing at 24 bit / 48khz, auto resampled to 16/48
+* Opus support (VBR obviously), use opustools to convert
 * cool (imo!) UI
 
 <img width="3520" height="1980" alt="IMG_4123" src="https://github.com/user-attachments/assets/97e5f675-fbd8-4602-9109-9458a6dc4618" />
@@ -17,9 +18,7 @@
 * HOME button to exit
 
 ## to implement:
-* OGG support
 * wav support
-* opus might.... not be doable...
 
 ## wishlist:
 * might be doable:
@@ -27,4 +26,5 @@
 * FFT equaliser
 * ME acceleration
 
-
+## tofix:
+* why de fuck is 48khz path so wonky with static
