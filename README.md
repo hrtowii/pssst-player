@@ -19,6 +19,7 @@
 
 ## to implement:
 * wav support
+* i wanna get a proper tree view or at least file explorer view, so for that i cant just recurse i have to keep track of each file's parent dir if i traversed it
 
 ## wishlist:
 * might be doable:

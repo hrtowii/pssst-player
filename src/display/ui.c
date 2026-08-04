@@ -42,15 +42,42 @@ static void truncate_to_width(char *buf, size_t buflen, int max_px) {
   snprintf(buf + cut, buflen - cut, "...");
 }
 
-void list_row_component(struct library *lib, int index, bool is_selected,
-                        bool is_playing, int row_width_px) {
-  static char row_text[VISIBLE_ROWS][80];
-  int slot = index % VISIBLE_ROWS;
-  snprintf(row_text[slot], sizeof(row_text[slot]), "%c%c%s",
-           is_selected ? '>' : ' ', is_playing ? '*' : ' ',
-           path_basename(lib->items[index].path));
+static inline bool dir_row_is_subdir(struct library *lib, uint32_t dir_idx, int row) {
+  return (uint32_t)row < lib->dirs[dir_idx].child_dir_len;
+}
 
-  int budget_px = row_width_px - 4 - (2 * GLYPH_W);
+static inline uint32_t dir_row_count(struct library *lib, uint32_t dir_idx) {
+  struct dir *d = &lib->dirs[dir_idx];
+  return (uint32_t)(d->child_dir_len + d->child_item_len);
+}
+
+static bool dir_row_resolve(struct library *lib, uint32_t dir_idx, int row, uint32_t *out_idx) {
+  struct dir *d = &lib->dirs[dir_idx];
+  if ((uint32_t)row < d->child_dir_len) {
+    *out_idx = d->child_dirs[row];
+    return true;
+  }
+  *out_idx = d->child_items[row - d->child_dir_len];
+  return false;
+}
+
+void list_row_component(struct library *lib, uint32_t dir_idx, int row,
+                        bool is_selected, bool is_playing, int row_width_px) {
+  static char row_text[VISIBLE_ROWS][80];
+  int slot = row % VISIBLE_ROWS;
+
+  uint32_t idx;
+  bool is_folder = dir_row_resolve(lib, dir_idx, row, &idx);
+
+  const char *name = is_folder ? lib->dirs[idx].name : lib->items[idx].name;
+
+  snprintf(row_text[slot], sizeof(row_text[slot]), "%c%c%c%s",
+           is_selected ? '>' : ' ',
+           is_playing ? '*' : ' ',
+           is_folder ? '/' : ' ',
+           name);
+
+  int budget_px = row_width_px - 4 - (3 * GLYPH_W);
   truncate_to_width(row_text[slot], sizeof(row_text[slot]), budget_px);
 
   Clay_String row_str = {.chars = row_text[slot],
@@ -58,7 +85,7 @@ void list_row_component(struct library *lib, int index, bool is_selected,
 
   Clay_Color bg = is_selected ? COLOR_ACCENT_DIM : COLOR_SURFACE;
 
-  CLAY(CLAY_IDI("Row", index),
+  CLAY(CLAY_IDI("Row", row),
        (Clay_ElementDeclaration){
            .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
                                  .height = CLAY_SIZING_FIXED(ROW_H)},
@@ -70,14 +97,20 @@ void list_row_component(struct library *lib, int index, bool is_selected,
   }
 }
 
-static void render_list(struct library *lib, int selected, int scroll,
-                        int playing_index, int row_width_px) {
+static void render_list(struct library *lib, uint32_t dir_idx, int selected,
+                        int scroll, int playing_index, int row_width_px) {
+  uint32_t total = dir_row_count(lib, dir_idx);
   int start = scroll;
   int end = scroll + VISIBLE_ROWS;
-  if (end > (int)lib->len)
-    end = (int)lib->len;
-  for (int i = start; i < end; i++) {
-    list_row_component(lib, i, i == selected, i == playing_index, row_width_px);
+  if (end > (int)total)
+    end = (int)total;
+
+  for (int row = start; row < end; row++) {
+    uint32_t idx;
+    bool is_folder = dir_row_resolve(lib, dir_idx, row, &idx);
+    // only a file row can ever be "the thing currently playing"
+    bool is_playing = !is_folder && ((int)idx == playing_index);
+    list_row_component(lib, dir_idx, row, row == selected, is_playing, row_width_px);
   }
 }
 
@@ -138,7 +171,7 @@ void build_ui(AppState *app) {
                             .padding = CLAY_PADDING_ALL(2)},
                  .backgroundColor = COLOR_BACKGROUND,
                  .border = border_all()}) {
-          render_list(app->lib, app->selected, app->scroll, app->playing_index,
+          render_list(app->lib, app->current_dir, app->selected, app->scroll, app->playing_index,
                       left_panel_px);
         }
       }
@@ -271,7 +304,7 @@ void build_ui(AppState *app) {
             }
           }
         } else {
-          render_list(app->lib, app->selected, app->scroll, app->playing_index,
+          render_list(app->lib, app->current_dir, app->selected, app->scroll, app->playing_index,
                       SCREEN_W - 8);
         }
       }

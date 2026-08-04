@@ -5,13 +5,38 @@
 struct item {
 	uint32_t       id;
 	char*          path;
+	char*          name;
+	uint32_t       parent;
 };
+
+// i want a recursive file tree structure that can collapse and show stuff, because it gets annoying to navigate
+
+struct dir {
+	uint32_t       id;
+	char*          name;
+	uint32_t       parent;
+
+	uint32_t*      child_dirs;  // indices into library->dirs
+	size_t         child_dir_len, child_dir_cap;
+
+	uint32_t*      child_items; // indices into library->items
+	size_t         child_item_len, child_item_cap;
+};
+
+// basically. the library now contains a list of items and directories. libraries->dirs[0..x] contains indexes of what are items (Songs)
+// so say that l->dirs[2].child_dirs[0] == 3 
+// l->dirs[3] is the child of l->dirs[2]
 
 struct library {
 	struct item*   items;
 	size_t         len;
 	size_t         cap;
+
+	struct dir*    dirs;
+	size_t         dir_len, dir_cap;
 };
+
+
 
 /**
  * @brief Free all memory owned by a library
