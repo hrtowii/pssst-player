@@ -13,11 +13,10 @@ extern ring_buffer_t          g_ring;
 extern volatile audio_state_t g_state;
 extern volatile bool          g_running;
 extern int                    g_audio_channel;
+extern bool                   g_src_reserved;
 extern volatile int           g_output_frames;
 extern volatile int           g_sample_rate;
 extern volatile int           g_pending_rate;
-
-int audio_reconfigure_output(int sample_rate);
 
 // ---- track-switch mailbox ----
 // ONLY decode_thread ever calls decoder_open/decoder_close.

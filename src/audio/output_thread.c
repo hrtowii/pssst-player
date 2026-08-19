@@ -12,9 +12,6 @@ int output_thread(SceSize args, void *argp) {
     short out_chunk[AUDIO_CHUNK_FRAMES * AUDIO_CHANNELS] __attribute__((aligned(64)));
     while (g_running) {
         if (g_pending_rate != 0) {
-            if (g_pending_rate != g_sample_rate) {
-                audio_reconfigure_output(g_pending_rate);
-            }
             g_sample_rate = g_pending_rate;
             g_pending_rate = 0;
         }
@@ -30,7 +27,7 @@ int output_thread(SceSize args, void *argp) {
             memset(out_chunk + n * AUDIO_CHANNELS, 0,
                    (AUDIO_CHUNK_FRAMES - n) * AUDIO_CHANNELS * sizeof(short));
         }
-        if (g_sample_rate == 48000) {
+        if (g_sample_rate == 48000 && g_src_reserved) {
             if (!logged_src) {
                 logged_src = true;
                 LOG_INFO("output", "SRC 48kHz output active");

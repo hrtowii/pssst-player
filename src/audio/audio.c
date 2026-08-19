@@ -29,43 +29,7 @@ volatile int g_output_frames = 0;
 volatile int g_sample_rate = 44100;
 volatile int g_pending_rate = 0;
 
-static bool g_src_reserved = false;
-
-int audio_reconfigure_output(int sample_rate) {
-  bool want_src = (sample_rate == 48000);
-
-  if (want_src == g_src_reserved)
-    return 0;
-
-  if (g_src_reserved) {
-    sceAudioSRCChRelease();
-    g_src_reserved = false;
-    LOG_INFO(TAG, "output -> hardware 44.1kHz");
-  }
-  if (g_audio_channel >= 0) {
-    sceAudioChRelease(g_audio_channel);
-    g_audio_channel = -1;
-  }
-
-  if (want_src) {
-    if (sceAudioSRCChReserve(AUDIO_CHUNK_FRAMES, 48000, 2) < 0) {
-      LOG_ERR(TAG, "sceAudioSRCChReserve failed");
-      return -1;
-    }
-    g_src_reserved = true;
-    LOG_INFO(TAG, "output -> SRC 48kHz");
-    return 0;
-  }
-
-  int ch = sceAudioChReserve(PSP_AUDIO_NEXT_CHANNEL, AUDIO_CHUNK_FRAMES,
-                             PSP_AUDIO_FORMAT_STEREO);
-  if (ch < 0) {
-    LOG_ERR(TAG, "sceAudioChReserve failed");
-    return -1;
-  }
-  g_audio_channel = ch;
-  return 0;
-}
+bool g_src_reserved = false;
 
 static SceUID g_decode_thread_id = -1;
 static SceUID g_output_thread_id = -1;
@@ -102,6 +66,13 @@ bool audio_init(void) {
   if (g_audio_channel < 0) {
     LOG_ERR(TAG, "sceAudioChReserve failed: %d", g_audio_channel);
     return false;
+  }
+
+  if (sceAudioSRCChReserve(AUDIO_CHUNK_FRAMES, 48000, 2) < 0) {
+    LOG_ERR(TAG, "sceAudioSRCChReserve failed (48kHz output disabled)");
+  } else {
+    g_src_reserved = true;
+    LOG_INFO(TAG, "SRC 48kHz channel reserved");
   }
 
   g_running = true;
